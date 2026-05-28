@@ -1,18 +1,1719 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>2022 Countdown</title>
-    <link rel="stylesheet" href="/assests/stylesheets/style.css" />
-  </head>
-  <body>
-    <div id="root"></div>
-    <!-- include React and ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@16/umd/react.development.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@16/umd/react-dom.development.js"></script>
-    <!-- include Babel standalone so we can process JSX in React.createElement stuff -->
-    <script crossorigin src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
-    <script src="./assests/javascript/main.js" type="text/babel"></script>
-  </body>
+<head>
+
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#000000">
+<meta name="viewport"
+content="width=device-width,
+initial-scale=1,
+maximum-scale=1,
+user-scalable=no">
+
+<title>ISKA Karate Attendance System</title>
+
+<!-- PDF -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
+<style>
+
+/* =========================
+   RESET
+========================= */
+
+*{
+    box-sizing:border-box;
+}
+
+html,
+body{
+    margin:0;
+    padding:0;
+    background:#eef2f7;
+    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
+    color:#1c1c1e;
+    overflow-x:hidden;
+}
+
+/* =========================
+   HEADER
+========================= */
+
+.header{
+    width:100%;
+    background:#007aff;
+    color:white;
+    text-align:center;
+    padding:18px;
+    font-size:26px;
+    font-weight:800;
+    position:sticky;
+    top:0;
+    z-index:100;
+    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+}
+
+/* =========================
+   APP
+========================= */
+
+.app{
+    display:flex;
+    min-height:100vh;
+}
+
+/* =========================
+   SIDEBAR
+========================= */
+
+.sidebar{
+    width:220px;
+    background:white;
+    padding:16px;
+    border-right:1px solid #e5e5ea;
+}
+
+.navbtn{
+    width:100%;
+    border:none;
+    padding:14px;
+    margin-bottom:10px;
+    border-radius:18px;
+    background:#f2f2f7;
+    font-size:15px;
+    font-weight:700;
+    cursor:pointer;
+    transition:0.2s;
+}
+
+.navbtn.active{
+    background:#007aff;
+    color:white;
+}
+
+/* =========================
+   MAIN
+========================= */
+
+.main{
+    flex:1;
+    display:flex;
+    justify-content:center;
+}
+
+/* =========================
+   CONTENT
+========================= */
+
+.content{
+    width:100%;
+    max-width:1200px;
+    padding:20px;
+}
+
+/* =========================
+   PAGES
+========================= */
+
+.page{
+    display:none;
+}
+
+.page.active{
+    display:block;
+}
+
+/* =========================
+   CARDS
+========================= */
+
+.card{
+    width:100%;
+    background:white;
+    border-radius:24px;
+    padding:24px;
+    margin-bottom:20px;
+    box-shadow:0 4px 18px rgba(0,0,0,0.06);
+}
+
+/* =========================
+   TITLES
+========================= */
+
+h2{
+    margin-top:0;
+    font-size:24px;
+}
+
+/* =========================
+   INPUTS
+========================= */
+
+input,
+select{
+    width:100%;
+    padding:16px;
+    margin-top:12px;
+    border-radius:16px;
+    border:1px solid #ddd;
+    font-size:16px;
+    background:#fafafa;
+}
+
+input:focus,
+select:focus{
+    outline:none;
+    border-color:#007aff;
+    background:white;
+}
+
+/* =========================
+   DATE INPUTS
+========================= */
+
+.dateInput{
+    width:80%;
+    max-width:340px;
+    min-width:220px;
+}
+
+/* =========================
+   BUTTONS
+========================= */
+
+button{
+    width:100%;
+    padding:16px;
+    margin-top:16px;
+    border:none;
+    border-radius:18px;
+    font-size:16px;
+    font-weight:700;
+    cursor:pointer;
+}
+
+.primary{
+    background:#007aff;
+    color:white;
+}
+
+.danger{
+    background:#ff3b30;
+    color:white;
+}
+
+.export{
+    background:#34c759;
+    color:white;
+}
+
+/* =========================
+   ERRORS
+========================= */
+
+.error{
+    color:#ff3b30;
+    font-size:13px;
+    margin-top:6px;
+    display:none;
+}
+
+/* =========================
+   TABLES
+========================= */
+
+.tableWrap{
+    overflow:auto;
+    border-radius:18px;
+    border:1px solid #eee;
+    margin-top:16px;
+}
+
+table{
+    width:100%;
+    min-width:1100px;
+    border-collapse:collapse;
+}
+
+th{
+    background:#f7f8fa;
+}
+
+th,
+td{
+    padding:12px;
+    border-bottom:1px solid #eee;
+    text-align:center;
+    font-size:14px;
+    white-space:nowrap;
+}
+
+/* =========================
+   SIGNATURE
+========================= */
+
+.signature{
+    font-family:cursive;
+    font-size:18px;
+}
+
+/* =========================
+   SUGGESTIONS
+========================= */
+
+.suggestions{
+    border:1px solid #ddd;
+    border-radius:16px;
+    overflow:hidden;
+    margin-top:4px;
+    background:white;
+    max-height:180px;
+    overflow-y:auto;
+}
+
+.suggestion-item{
+    padding:12px;
+    border-bottom:1px solid #eee;
+    cursor:pointer;
+}
+
+.suggestion-item:hover{
+    background:#f3f8ff;
+}
+
+/* =========================
+   SUCCESS
+========================= */
+
+.successOverlay{
+    position:fixed;
+    inset:0;
+    background:rgba(0,0,0,0.25);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    z-index:9999;
+    opacity:0;
+    pointer-events:none;
+    transition:0.25s;
+}
+
+.successOverlay.show{
+    opacity:1;
+    pointer-events:auto;
+}
+
+.successCard{
+    width:220px;
+    background:white;
+    border-radius:30px;
+    padding:30px 20px;
+    text-align:center;
+    transform:scale(0.7);
+    transition:0.25s;
+}
+
+.successOverlay.show .successCard{
+    transform:scale(1);
+}
+
+.checkCircle{
+    width:90px;
+    height:90px;
+    border-radius:50%;
+    background:#34c759;
+    margin:auto;
+    position:relative;
+}
+
+.checkCircle::after{
+    content:"";
+    position:absolute;
+    left:26px;
+    top:20px;
+    width:22px;
+    height:42px;
+    border-right:7px solid white;
+    border-bottom:7px solid white;
+    transform:rotate(45deg);
+}
+
+.successText{
+    margin-top:18px;
+    font-size:18px;
+    font-weight:700;
+}
+
+/* =========================
+   LEGAL
+========================= */
+/* Legal container */
+.legal{
+    position: relative;
+    overflow-y: auto;
+    max-height: 240px;
+    scroll-behavior: smooth;
+}
+
+/* Scroll arrow */
+.legal::after{
+    content: "⬇";
+    position: absolute;
+    right: 10px;
+    bottom: 10px;
+
+    width: 28px;
+    height: 28px;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    font-size: 15px;
+    color: #007aff;
+
+    background: rgba(255,255,255,0.92);
+    border-radius: 50%;
+
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+
+    pointer-events: none;
+
+    opacity: 1;
+
+    transition: opacity 0.35s ease;
+}
+
+/* Hide while scrolling down */
+.legal.hide-arrow::after{
+    opacity: 0;
+}
+
+/* Flash when scrolling up */
+.legal.show-arrow::after{
+    animation: pulseArrow 1.8s infinite;
+}
+
+/* Gentle flash */
+@keyframes pulseArrow{
+    0%{
+        transform: translateY(0);
+        opacity: 0.35;
+    }
+
+    50%{
+        transform: translateY(4px);
+        opacity: 1;
+    }
+
+    100%{
+        transform: translateY(0);
+        opacity: 0.35;
+    }
+}
+
+/* Optional title styling */
+.legal h2{
+    margin: 0 0 10px;
+    font-size: 16px;
+    font-weight: 700;
+    color: #0056cc;
+    letter-spacing: 0.5px;
+}
+
+/* Paragraph spacing */
+.legal p{
+    margin: 0 0 10px;
+}
+
+/* Better scrollbar for Android tablets */
+.legal::-webkit-scrollbar{
+    width: 6px;
+}
+
+.legal::-webkit-scrollbar-thumb{
+    background: #007aff;
+    border-radius: 20px;
+}
+
+.legal::-webkit-scrollbar-track{
+    background: transparent;
+}
+
+/* Mobile optimization */
+@media (max-width: 600px){
+    .legal{
+        padding: 14px;
+        border-radius: 14px;
+        font-size: 13px;
+        line-height: 1.5;
+        max-height: 200px;
+    }
+
+    .legal h2{
+        font-size: 15px;
+    }
+}
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer{
+    text-align:center;
+    font-size:13px;
+    color:#777;
+    padding:20px;
+}
+
+/* =========================
+   MOBILE
+========================= */
+
+@media(max-width:900px){
+
+    .app{
+        flex-direction:column;
+    }
+
+    .sidebar{
+        width:100%;
+        display:flex;
+        gap:8px;
+        border-right:none;
+        border-bottom:1px solid #eee;
+    }
+
+    .navbtn{
+        flex:1;
+        margin-bottom:0;
+    }
+
+    .content{
+        padding:14px;
+    }
+
+    .card{
+        padding:18px;
+    }
+
+    .dateInput{
+        width:100%;
+        max-width:100%;
+    }
+
+}
+
+</style>
+</head>
+
+<body>
+
+<div class="header">
+ISKA Karate Attendance
+</div>
+
+<!-- SUCCESS -->
+<div id="successOverlay" class="successOverlay">
+
+<div class="successCard">
+
+<div class="checkCircle"></div>
+
+<div id="successText" class="successText">
+Success
+</div>
+
+</div>
+
+</div>
+
+<div class="app">
+
+<!-- NAV -->
+<div class="sidebar">
+
+<button class="navbtn active"
+onclick="showPage('attendance',this)">
+Attendance
+</button>
+
+<button class="navbtn"
+onclick="showPage('payments',this)">
+Payments
+</button>
+
+<button class="navbtn"
+onclick="showPage('reports',this)">
+Reports
+</button>
+
+</div>
+
+<!-- MAIN -->
+<div class="main">
+
+<div class="content">
+
+<!-- =========================
+     ATTENDANCE
+========================= -->
+
+<div id="attendance" class="page active">
+
+<div class="card">
+
+<h2>Check-In</h2>
+
+<input id="studentIn"
+placeholder="Student Name">
+
+<div id="studentInSuggest"
+class="suggestions"></div>
+
+<div id="errStudentIn"
+class="error">
+Student required
+</div>
+
+<input id="parentIn"
+placeholder="Parent / Guardian">
+
+<div id="parentInSuggest"
+class="suggestions"></div>
+
+<div id="errParentIn"
+class="error">
+Parent required
+</div>
+
+<input id="relation"
+placeholder="Relationship">
+
+<div id="errRelation"
+class="error">
+Relationship required
+</div>
+
+<input id="signature"
+class="signature"
+placeholder="Signature"
+readonly>
+
+<button class="primary"
+onclick="checkIn()">
+Check In
+</button>
+
+<hr style="margin:30px 0;border:none;border-top:1px solid #eee;">
+
+<h2>Check-Out</h2>
+
+<input id="studentOut"
+placeholder="Student Name">
+
+<div id="studentOutSuggest"
+class="suggestions"></div>
+
+<div id="errStudentOut"
+class="error">
+Student required
+</div>
+
+<button class="danger"
+onclick="checkOut()">
+Check Out
+</button>
+
+</div>
+
+</div>
+
+<!-- =========================
+     PAYMENTS
+========================= -->
+
+<div id="payments" class="page">
+
+<div class="card">
+
+<h2>Payments</h2>
+
+<input id="payStudent"
+placeholder="Student Name">
+
+<div id="payStudentSuggest"
+class="suggestions"></div>
+
+<div id="errPayStudent"
+class="error">
+Student required
+</div>
+
+<input id="payParent"
+placeholder="Parent / Guardian">
+
+<div id="payParentSuggest"
+class="suggestions"></div>
+
+<div id="errPayParent"
+class="error">
+Parent required
+</div>
+
+<select id="payType">
+
+<option value="Cash" selected>
+Cash
+</option>
+
+<option value="Check">
+Check
+</option>
+
+<option value="Credit Card">
+Credit Card
+</option>
+
+<option value="Zelle">
+Zelle
+</option>
+
+<option value="Apple Pay">
+Apple Pay
+</option>
+
+<option value="Other">
+Other
+</option>
+
+</select>
+
+<input id="payAmount"
+placeholder="Amount">
+
+<div id="errPayAmount"
+class="error">
+Amount required
+</div>
+
+<select id="payMonth"
+class="dateInput"></select>
+
+<button class="primary"
+onclick="savePayment()">
+Save Payment
+</button>
+
+</div>
+
+</div>
+
+<!-- =========================
+     REPORTS
+========================= -->
+
+<div id="reports" class="page">
+
+<!-- ATTENDANCE REPORT -->
+<div class="card">
+
+<h2>Attendance Report</h2>
+
+<input type="date"
+id="attendanceDate"
+class="dateInput"
+onchange="loadAttendanceReport()">
+
+<div class="tableWrap">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Date</th>
+<th>Student</th>
+<th>Status</th>
+<th>In</th>
+<th>Out</th>
+<th>Parent</th>
+<th>Relationship</th>
+<th>Signature</th>
+<th>Fee</th>
+</tr>
+
+</thead>
+
+<tbody id="attendanceLog"></tbody>
+
+</table>
+
+</div>
+
+<button class="export"
+onclick="exportAttendancePDF()">
+Export Attendance PDF
+</button>
+
+</div>
+
+<!-- PAYMENT REPORT -->
+<div class="card">
+
+<h2>Payment Report</h2>
+
+<input type="month"
+id="paymentReportMonth"
+class="dateInput"
+onchange="loadPaymentReport()">
+
+<div class="tableWrap">
+
+<table>
+
+<thead>
+
+<tr>
+<th>Payment Date</th>
+<th>Student</th>
+<th>Parent</th>
+<th>Month</th>
+<th>Type</th>
+<th>Amount</th>
+</tr>
+
+</thead>
+
+<tbody id="paymentLog"></tbody>
+
+</table>
+
+</div>
+
+<button class="export"
+onclick="exportPaymentPDF()">
+Export Payment PDF
+</button>
+
+</div>
+
+</div>
+
+<!-- LEGAL -->
+<div class="legal">
+
+<strong>LEGAL NOTICE</strong>
+
+  <p>
+
+    By using this attendance and payment system, all submitted information,
+
+    including attendance entries, payment records, timestamps, and electronic
+
+    acknowledgments, is considered an official business record.
+
+  </p>
+
+  <p>
+
+    Parent, guardian, student, or authorized representative signatures entered
+
+    electronically into this system constitute acknowledgment and confirmation
+
+    of the related attendance and/or payment activity.
+
+  </p>
+
+  <p>
+
+    Payment information recorded in this system may be used for billing,
+
+    tuition tracking, financial reporting, audit, dispute resolution, and
+
+    verification purposes.
+
+  </p>
+
+  <p>
+
+    All records are stored locally on the device unless manually exported,
+
+    backed up, synchronized, or transferred by an authorized administrator.
+
+    Users are responsible for maintaining the security and confidentiality of
+
+    the device and exported records.
+
+  </p>
+
+  <p>
+
+    Unauthorized access, alteration, deletion, duplication, falsification, or
+
+    misuse of attendance, payment, or signature data is strictly prohibited
+
+    and may result in disciplinary action, termination of access, civil
+
+    liability, and/or criminal penalties under applicable law.
+
+  </p>
+
+  <p>
+
+    By continuing to use this system, users acknowledge and agree to comply
+
+    with all applicable organizational policies, privacy requirements, and
+
+    recordkeeping procedures.
+
+  </p>
+</div>
+
+<!-- FOOTER -->
+<div class="footer">
+© 2026 ISKA Karate — All Rights Reserved | Author: Narayan Bhattarai
+</div>
+
+</div>
+</div>
+
+<script>
+function goFullscreen() {
+    const el = document.documentElement;
+
+    if (el.requestFullscreen) {
+        el.requestFullscreen();
+    } else if (el.webkitRequestFullscreen) {
+        el.webkitRequestFullscreen();
+    }
+}
+
+// trigger on first interaction anywhere
+document.addEventListener("touchstart", goFullscreen, { once: true });
+/* =========================
+   PAGE SWITCH
+========================= */
+
+function showPage(id,btn){
+
+document.querySelectorAll(".page")
+.forEach(p=>p.classList.remove("active"));
+
+document.getElementById(id)
+.classList.add("active");
+
+document.querySelectorAll(".navbtn")
+.forEach(b=>b.classList.remove("active"));
+
+btn.classList.add("active");
+
+}
+
+/* =========================
+   DATE
+========================= */
+
+function today(){
+return new Date().toISOString().split("T")[0];
+}
+
+/* =========================
+   STORAGE
+========================= */
+
+function attendanceKey(date){
+return "attendance_"+date;
+}
+
+function getAttendance(date){
+return JSON.parse(
+localStorage.getItem(attendanceKey(date))||"[]"
+);
+}
+
+function saveAttendance(date,data){
+localStorage.setItem(
+attendanceKey(date),
+JSON.stringify(data)
+);
+}
+
+function getPayments(){
+return JSON.parse(
+localStorage.getItem("payments")||"[]"
+);
+}
+
+function savePayments(data){
+localStorage.setItem(
+"payments",
+JSON.stringify(data)
+);
+}
+
+/* =========================
+   NORMALIZE
+========================= */
+
+function normalize(v){
+return v.trim().toLowerCase();
+}
+
+/* =========================
+   SIGNATURE
+========================= */
+
+parentIn.addEventListener("input",()=>{
+signature.value=parentIn.value;
+});
+
+/* =========================
+   SUCCESS
+========================= */
+
+function showSuccess(message){
+
+successText.innerText=message;
+
+successOverlay.classList.add("show");
+
+setTimeout(()=>{
+successOverlay.classList.remove("show");
+},1800);
+
+}
+
+/* =========================
+   ERRORS
+========================= */
+
+function showError(id,show){
+
+document.getElementById(id).style.display=
+show ? "block" : "none";
+
+}
+
+/* =========================
+   PAYMENT MONTHS
+========================= */
+
+function loadPaymentMonths(){
+
+payMonth.innerHTML="";
+
+const now=new Date();
+
+for(let i=-12;i<=1;i++){
+
+let d=new Date(
+now.getFullYear(),
+now.getMonth()+i,
+1
+);
+
+let val=
+d.getFullYear()+
+"-"+
+String(d.getMonth()+1).padStart(2,"0");
+
+let opt=document.createElement("option");
+
+opt.value=val;
+opt.textContent=val;
+
+if(i===0){
+opt.selected=true;
+}
+
+payMonth.appendChild(opt);
+
+}
+
+}
+
+/* =========================
+   CHECK IN
+========================= */
+
+function checkIn(){
+
+let valid=true;
+
+if(!studentIn.value.trim()){
+showError("errStudentIn",true);
+valid=false;
+}else{
+showError("errStudentIn",false);
+}
+
+if(!parentIn.value.trim()){
+showError("errParentIn",true);
+valid=false;
+}else{
+showError("errParentIn",false);
+}
+
+if(!relation.value.trim()){
+showError("errRelation",true);
+valid=false;
+}else{
+showError("errRelation",false);
+}
+
+if(!valid) return;
+
+let date=attendanceDate.value;
+
+let feeStatus="UNPAID";
+
+let paid=getPayments().find(p=>
+
+normalize(p.student)===
+normalize(studentIn.value)
+
+&&
+
+p.month===date.slice(0,7)
+
+);
+
+if(paid){
+feeStatus="PAID";
+}
+
+let data=getAttendance(date);
+
+data.push({
+
+date,
+student:studentIn.value.trim(),
+status:"IN",
+in:new Date().toLocaleTimeString(),
+out:"",
+parent:parentIn.value.trim(),
+relationship:relation.value.trim(),
+signature:signature.value.trim(),
+fee:feeStatus
+
+});
+
+saveAttendance(date,data);
+
+studentIn.value="";
+parentIn.value="";
+relation.value="";
+signature.value="";
+
+loadAttendanceReport();
+
+showSuccess("Successfully Checked In");
+
+}
+
+/* =========================
+   CHECK OUT
+========================= */
+
+function checkOut(){
+
+if(!studentOut.value.trim()){
+showError("errStudentOut",true);
+return;
+}
+
+showError("errStudentOut",false);
+
+let date=attendanceDate.value;
+
+let data=getAttendance(date);
+
+let rec=data.find(x=>
+
+normalize(x.student)===
+normalize(studentOut.value)
+
+&& x.status==="IN"
+
+);
+
+if(rec){
+
+rec.status="OUT";
+
+rec.out=new Date().toLocaleTimeString();
+
+saveAttendance(date,data);
+
+}
+
+studentOut.value="";
+
+loadAttendanceReport();
+
+showSuccess("Successfully Checked Out");
+
+}
+
+/* =========================
+   SAVE PAYMENT
+========================= */
+
+function savePayment(){
+
+let valid=true;
+
+if(!payStudent.value.trim()){
+showError("errPayStudent",true);
+valid=false;
+}else{
+showError("errPayStudent",false);
+}
+
+if(!payParent.value.trim()){
+showError("errPayParent",true);
+valid=false;
+}else{
+showError("errPayParent",false);
+}
+
+if(!payAmount.value.trim()){
+showError("errPayAmount",true);
+valid=false;
+}else{
+showError("errPayAmount",false);
+}
+
+if(!valid) return;
+
+let payments=getPayments();
+
+payments.push({
+
+paymentDate:new Date().toLocaleDateString(),
+
+student:payStudent.value.trim(),
+
+parent:payParent.value.trim(),
+
+type:payType.value,
+
+amount:payAmount.value,
+
+month:payMonth.value
+
+});
+
+savePayments(payments);
+
+/* SYNC FEES */
+
+Object.keys(localStorage)
+
+.filter(k=>k.startsWith("attendance_"))
+
+.forEach(key=>{
+
+let records=
+JSON.parse(localStorage.getItem(key)||"[]");
+
+records.forEach(r=>{
+
+if(
+
+normalize(r.student)===
+normalize(payStudent.value)
+
+&&
+
+r.date.slice(0,7)===payMonth.value
+
+){
+
+r.fee="PAID";
+
+}
+
+});
+
+localStorage.setItem(
+key,
+JSON.stringify(records)
+);
+
+});
+
+payStudent.value="";
+payParent.value="";
+payAmount.value="";
+
+loadPaymentReport();
+loadAttendanceReport();
+
+showSuccess("Payment Saved");
+
+}
+
+/* =========================
+   ATTENDANCE REPORT
+========================= */
+
+function loadAttendanceReport(){
+
+let data=getAttendance(attendanceDate.value);
+
+attendanceLog.innerHTML="";
+
+data.forEach(r=>{
+
+attendanceLog.innerHTML+=`
+
+<tr>
+
+<td>${r.date}</td>
+
+<td>${r.student}</td>
+
+<td>${r.status}</td>
+
+<td>${r.in}</td>
+
+<td>${r.out}</td>
+
+<td>${r.parent}</td>
+
+<td>${r.relationship}</td>
+
+<td class="signature">${r.signature}</td>
+
+<td>${r.fee}</td>
+
+</tr>
+
+`;
+
+});
+
+}
+
+/* =========================
+   PAYMENT REPORT
+========================= */
+
+function loadPaymentReport(){
+
+let selected=
+paymentReportMonth.value;
+
+let data=getPayments();
+
+if(selected){
+
+data=data.filter(p=>
+
+p.month===selected
+
+);
+
+}
+
+paymentLog.innerHTML="";
+
+data.forEach(r=>{
+
+paymentLog.innerHTML+=`
+
+<tr>
+
+<td>${r.paymentDate}</td>
+
+<td>${r.student}</td>
+
+<td>${r.parent}</td>
+
+<td>${r.month}</td>
+
+<td>${r.type}</td>
+
+<td>${r.amount}</td>
+
+</tr>
+
+`;
+
+});
+
+}
+
+/* =========================
+   EXPORT ATTENDANCE
+========================= */
+
+function exportAttendancePDF(){
+
+const {jsPDF}=window.jspdf;
+
+const doc=new jsPDF();
+
+doc.text(
+"Attendance Report - "+attendanceDate.value,
+14,
+15
+);
+
+let data=getAttendance(attendanceDate.value);
+
+doc.autoTable({
+
+head:[[
+"Date",
+"Student",
+"Status",
+"In",
+"Out",
+"Parent",
+"Relationship",
+"Signature",
+"Fee"
+]],
+
+body:data.map(r=>[
+r.date,
+r.student,
+r.status,
+r.in,
+r.out,
+r.parent,
+r.relationship,
+r.signature,
+r.fee
+]),
+
+startY:25
+
+});
+
+doc.save(
+"attendance_"+attendanceDate.value+".pdf"
+);
+
+}
+
+/* =========================
+   EXPORT PAYMENTS
+========================= */
+
+function exportPaymentPDF(){
+
+const {jsPDF}=window.jspdf;
+
+const doc=new jsPDF();
+
+let month=paymentReportMonth.value;
+
+doc.text(
+"Payment Report - "+month,
+14,
+15
+);
+
+let data=getPayments();
+
+if(month){
+
+data=data.filter(p=>
+p.month===month
+);
+
+}
+
+doc.autoTable({
+
+head:[[
+"Payment Date",
+"Student",
+"Parent",
+"Month",
+"Type",
+"Amount"
+]],
+
+body:data.map(r=>[
+r.paymentDate,
+r.student,
+r.parent,
+r.month,
+r.type,
+r.amount
+]),
+
+startY:25
+
+});
+
+doc.save(
+"payments_"+month+".pdf"
+);
+
+}
+
+/* =========================
+   AUTOCOMPLETE
+========================= */
+
+function getAllStudents(){
+
+let names=[];
+
+Object.keys(localStorage)
+
+.filter(k=>k.startsWith("attendance_"))
+
+.forEach(k=>{
+
+let data=
+JSON.parse(localStorage.getItem(k)||"[]");
+
+data.forEach(r=>{
+if(r.student){
+names.push(r.student);
+}
+});
+
+});
+
+return [...new Set(names)];
+
+}
+
+function getAllParents(){
+
+let names=[];
+
+Object.keys(localStorage)
+
+.filter(k=>k.startsWith("attendance_"))
+
+.forEach(k=>{
+
+let data=
+JSON.parse(localStorage.getItem(k)||"[]");
+
+data.forEach(r=>{
+if(r.parent){
+names.push(r.parent);
+}
+});
+
+});
+
+return [...new Set(names)];
+
+}
+
+function score(text,input){
+
+text=text.toLowerCase();
+input=input.toLowerCase();
+
+if(text===input) return 100;
+
+if(text.startsWith(input)) return 80;
+
+if(text.includes(input)) return 60;
+
+let matches=0;
+
+input.split("").forEach(ch=>{
+if(text.includes(ch)){
+matches++;
+}
+});
+
+return matches*5;
+
+}
+
+function setupSuggestion(
+inputId,
+boxId,
+type
+){
+
+const input=
+document.getElementById(inputId);
+
+const box=
+document.getElementById(boxId);
+
+input.addEventListener("input",()=>{
+
+let value=input.value.trim();
+
+box.innerHTML="";
+
+if(!value) return;
+
+let source=
+type==="student"
+? getAllStudents()
+: getAllParents();
+
+source
+
+.map(name=>({
+name,
+score:score(name,value)
+}))
+
+.filter(x=>x.score>0)
+
+.sort((a,b)=>b.score-a.score)
+
+.slice(0,6)
+
+.forEach(item=>{
+
+let div=
+document.createElement("div");
+
+div.className=
+"suggestion-item";
+
+div.innerText=item.name;
+
+div.onclick=()=>{
+
+input.value=item.name;
+
+box.innerHTML="";
+
+};
+
+box.appendChild(div);
+
+});
+
+});
+
+}
+
+/* =========================
+   INIT
+========================= */
+
+window.onload=()=>{
+
+attendanceDate.value=today();
+
+paymentReportMonth.value=
+today().slice(0,7);
+
+loadPaymentMonths();
+
+loadAttendanceReport();
+
+loadPaymentReport();
+
+setupSuggestion(
+"studentIn",
+"studentInSuggest",
+"student"
+);
+
+setupSuggestion(
+"parentIn",
+"parentInSuggest",
+"parent"
+);
+
+setupSuggestion(
+"studentOut",
+"studentOutSuggest",
+"student"
+);
+
+setupSuggestion(
+"payStudent",
+"payStudentSuggest",
+"student"
+);
+
+setupSuggestion(
+"payParent",
+"payParentSuggest",
+"parent"
+);
+
+};
+const legal = document.querySelector('.legal');
+
+let lastScrollTop = 0;
+
+legal.classList.add('show-arrow');
+
+legal.addEventListener('scroll', () => {
+
+    const currentScroll = legal.scrollTop;
+
+    /* User scrolling DOWN */
+
+    if(currentScroll > lastScrollTop + 2){
+
+        legal.classList.remove('show-arrow');
+
+        legal.classList.add('hide-arrow');
+
+    }
+
+    /* User scrolling UP */
+
+    else if(currentScroll < lastScrollTop - 2){
+
+        /* Only show if not at bottom */
+
+        if(
+
+            currentScroll + legal.clientHeight
+
+            < legal.scrollHeight - 5
+
+        ){
+
+            legal.classList.remove('hide-arrow');
+
+            legal.classList.add('show-arrow');
+
+        }
+
+    }
+
+    /* Hide at bottom */
+
+    if(
+
+        currentScroll + legal.clientHeight
+
+        >= legal.scrollHeight - 5
+
+    ){
+
+        legal.classList.remove('show-arrow');
+
+        legal.classList.add('hide-arrow');
+
+    }
+
+    lastScrollTop = currentScroll;
+
+});
+</script>
+
+</body>
 </html>
