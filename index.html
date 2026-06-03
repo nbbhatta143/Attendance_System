@@ -1,1719 +1,1347 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="theme-color" content="#000000">
-<meta name="viewport"
-content="width=device-width,
-initial-scale=1,
-maximum-scale=1,
-user-scalable=no">
+<meta name="theme-color" content="#0a0f1e">
+<title>ISKA Karate Attendance</title>
 
-<title>ISKA Karate Attendance System</title>
-
-<!-- PDF -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
 
 <style>
-
-/* =========================
-   RESET
-========================= */
-
-*{
-    box-sizing:border-box;
+:root {
+  --navy:       #0a0f1e;
+  --navy2:      #111827;
+  --navy3:      #1a2540;
+  --amber:      #d97706;
+  --amber2:     #b45309;
+  --amber-glow: rgba(217,119,6,0.12);
+  --blue:       #3b82f6;
+  --blue2:      #2563eb;
+  --green:      #059669;
+  --red:        #dc2626;
+  --surface:    rgba(0,0,0,0.03);
+  --border:     #e5e7eb;
+  --text:       #111827;
+  --text2:      #374151;
+  --text3:      #6b7280;
+  --radius:     18px;
+  --radius-sm:  12px;
+  --sidebar-w:  240px;
+  /* page area */
+  --page-bg:    #f3f4f6;
+  --card-bg:    #ffffff;
 }
 
-html,
-body{
-    margin:0;
-    padding:0;
-    background:#eef2f7;
-    font-family:-apple-system,BlinkMacSystemFont,sans-serif;
-    color:#1c1c1e;
-    overflow-x:hidden;
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body {
+  width: 100%; height: 100%;
+  background: var(--navy);
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  overflow: hidden;
 }
 
-/* =========================
-   HEADER
-========================= */
-
-.header{
-    width:100%;
-    background:#007aff;
-    color:white;
-    text-align:center;
-    padding:18px;
-    font-size:26px;
-    font-weight:800;
-    position:sticky;
-    top:0;
-    z-index:100;
-    box-shadow:0 2px 10px rgba(0,0,0,0.1);
+/* page content area gets white/light background */
+.scroll {
+  background: var(--page-bg);
 }
 
-/* =========================
-   APP
-========================= */
-
-.app{
-    display:flex;
-    min-height:100vh;
+/* ── LAYOUT ── */
+.shell {
+  display: flex;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
 }
 
-/* =========================
-   SIDEBAR
-========================= */
-
-.sidebar{
-    width:220px;
-    background:white;
-    padding:16px;
-    border-right:1px solid #e5e5ea;
+/* ── SIDEBAR ── */
+.sidebar {
+  width: var(--sidebar-w);
+  min-width: var(--sidebar-w);
+  background: var(--navy2);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(255,255,255,0.07);
+  z-index: 10;
+  position: relative;
+  overflow: hidden;
 }
 
-.navbtn{
-    width:100%;
-    border:none;
-    padding:14px;
-    margin-bottom:10px;
-    border-radius:18px;
-    background:#f2f2f7;
-    font-size:15px;
-    font-weight:700;
-    cursor:pointer;
-    transition:0.2s;
+.brand {
+  padding: 28px 20px 20px;
+  border-bottom: 1px solid rgba(255,255,255,0.07);
+}
+.sidebar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(245,158,11,0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(245,158,11,0.04) 1px, transparent 1px);
+  background-size: 32px 32px;
+  pointer-events: none;
 }
 
-.navbtn.active{
-    background:#007aff;
-    color:white;
+.brand-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* =========================
-   MAIN
-========================= */
-
-.main{
-    flex:1;
-    display:flex;
-    justify-content:center;
+.brand-icon {
+  width: 42px; height: 42px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--amber), #d97706);
+  display: flex; align-items: center; justify-content: center;
+  font-size: 20px;
+  box-shadow: 0 0 20px var(--amber-glow);
 }
 
-/* =========================
-   CONTENT
-========================= */
-
-.content{
-    width:100%;
-    max-width:1200px;
-    padding:20px;
+.brand-text {
+  font-family: 'Rajdhani', sans-serif;
+  font-weight: 700;
+  font-size: 17px;
+  line-height: 1.2;
+  color: #f1f5f9;
 }
 
-/* =========================
-   PAGES
-========================= */
-
-.page{
-    display:none;
+.brand-text span {
+  display: block;
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--amber);
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
 }
 
-.page.active{
-    display:block;
+.nav {
+  padding: 20px 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
-/* =========================
-   CARDS
-========================= */
-
-.card{
-    width:100%;
-    background:white;
-    border-radius:24px;
-    padding:24px;
-    margin-bottom:20px;
-    box-shadow:0 4px 18px rgba(0,0,0,0.06);
+.nav-label {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #4b5563;
+  padding: 4px 10px 8px;
 }
 
-/* =========================
-   TITLES
-========================= */
-
-h2{
-    margin-top:0;
-    font-size:24px;
+.navbtn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 13px 14px;
+  border: none;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: #94a3b8;
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  position: relative;
+  text-align: left;
 }
 
-/* =========================
-   INPUTS
-========================= */
-
-input,
-select{
-    width:100%;
-    padding:16px;
-    margin-top:12px;
-    border-radius:16px;
-    border:1px solid #ddd;
-    font-size:16px;
-    background:#fafafa;
+.navbtn .icon {
+  font-size: 18px;
+  width: 22px;
+  text-align: center;
+  flex-shrink: 0;
 }
 
-input:focus,
-select:focus{
-    outline:none;
-    border-color:#007aff;
-    background:white;
+.navbtn:hover {
+  background: rgba(255,255,255,0.06);
+  color: #e2e8f0;
 }
 
-/* =========================
-   DATE INPUTS
-========================= */
-
-.dateInput{
-    width:80%;
-    max-width:340px;
-    min-width:220px;
+.navbtn.active {
+  background: var(--amber-glow);
+  color: var(--amber);
+  border: 1px solid rgba(217,119,6,0.3);
 }
 
-/* =========================
-   BUTTONS
-========================= */
-
-button{
-    width:100%;
-    padding:16px;
-    margin-top:16px;
-    border:none;
-    border-radius:18px;
-    font-size:16px;
-    font-weight:700;
-    cursor:pointer;
+.navbtn.active::before {
+  content: '';
+  position: absolute;
+  left: 0; top: 20%; bottom: 20%;
+  width: 3px;
+  border-radius: 4px;
+  background: var(--amber);
 }
 
-.primary{
-    background:#007aff;
-    color:white;
+.sidebar-footer {
+  padding: 16px 20px;
+  border-top: 1px solid rgba(255,255,255,0.07);
+  font-size: 11px;
+  color: #4b5563;
+  line-height: 1.5;
 }
 
-.danger{
-    background:#ff3b30;
-    color:white;
+/* ── MAIN ── */
+.main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
-.export{
-    background:#34c759;
-    color:white;
+/* ── TOP BAR ── */
+.topbar {
+  height: 62px;
+  min-height: 62px;
+  background: var(--navy2);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  padding: 0 28px;
+  gap: 16px;
 }
 
-/* =========================
-   ERRORS
-========================= */
-
-.error{
-    color:#ff3b30;
-    font-size:13px;
-    margin-top:6px;
-    display:none;
+.topbar-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #f1f5f9;
+  flex: 1;
 }
 
-/* =========================
-   TABLES
-========================= */
-
-.tableWrap{
-    overflow:auto;
-    border-radius:18px;
-    border:1px solid #eee;
-    margin-top:16px;
+.topbar-date {
+  font-size: 13px;
+  color: #64748b;
+  font-weight: 500;
 }
 
-table{
-    width:100%;
-    min-width:1100px;
-    border-collapse:collapse;
+.status-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s infinite;
 }
 
-th{
-    background:#f7f8fa;
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
 }
 
-th,
-td{
-    padding:12px;
-    border-bottom:1px solid #eee;
-    text-align:center;
-    font-size:14px;
-    white-space:nowrap;
+/* ── SCROLL AREA ── */
+.scroll {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px 28px;
+  scroll-behavior: smooth;
 }
 
-/* =========================
-   SIGNATURE
-========================= */
+.scroll::-webkit-scrollbar { width: 5px; }
+.scroll::-webkit-scrollbar-track { background: transparent; }
+.scroll::-webkit-scrollbar-thumb { background: var(--navy3); border-radius: 10px; }
 
-.signature{
-    font-family:cursive;
-    font-size:18px;
+/* ── PAGES ── */
+.page { display: none; }
+.page.active { display: block; }
+
+/* ── GRID LAYOUT ── */
+.grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 20px;
 }
 
-/* =========================
-   SUGGESTIONS
-========================= */
-
-.suggestions{
-    border:1px solid #ddd;
-    border-radius:16px;
-    overflow:hidden;
-    margin-top:4px;
-    background:white;
-    max-height:180px;
-    overflow-y:auto;
+/* ── CARD ── */
+.card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  padding: 24px;
+  margin-bottom: 20px;
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.06);
 }
 
-.suggestion-item{
-    padding:12px;
-    border-bottom:1px solid #eee;
-    cursor:pointer;
+.card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--amber), transparent);
+  opacity: 0.5;
 }
 
-.suggestion-item:hover{
-    background:#f3f8ff;
+.card-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--navy);
+  margin-bottom: 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* =========================
-   SUCCESS
-========================= */
-
-.successOverlay{
-    position:fixed;
-    inset:0;
-    background:rgba(0,0,0,0.25);
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    z-index:9999;
-    opacity:0;
-    pointer-events:none;
-    transition:0.25s;
+.card-title .badge {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 3px 10px;
+  border-radius: 20px;
 }
 
-.successOverlay.show{
-    opacity:1;
-    pointer-events:auto;
+.badge-in  { background: rgba(16,185,129,0.15); color: var(--green); border: 1px solid rgba(16,185,129,0.3); }
+.badge-out { background: rgba(239,68,68,0.15);  color: var(--red);   border: 1px solid rgba(239,68,68,0.3);  }
+.badge-pay { background: rgba(59,130,246,0.15); color: var(--blue2); border: 1px solid rgba(59,130,246,0.3); }
+
+/* ── FORM FIELD ── */
+.field {
+  margin-bottom: 14px;
+  position: relative;
 }
 
-.successCard{
-    width:220px;
-    background:white;
-    border-radius:30px;
-    padding:30px 20px;
-    text-align:center;
-    transform:scale(0.7);
-    transition:0.25s;
+.field label {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text3);
+  margin-bottom: 7px;
 }
 
-.successOverlay.show .successCard{
-    transform:scale(1);
+.field input,
+.field select {
+  width: 100%;
+  padding: 13px 16px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: #f9fafb;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 15px;
+  font-weight: 500;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  -webkit-appearance: none;
 }
 
-.checkCircle{
-    width:90px;
-    height:90px;
-    border-radius:50%;
-    background:#34c759;
-    margin:auto;
-    position:relative;
+.field input:focus,
+.field select:focus {
+  outline: none;
+  border-color: var(--amber);
+  box-shadow: 0 0 0 3px var(--amber-glow);
+  background: #fff;
 }
 
-.checkCircle::after{
-    content:"";
-    position:absolute;
-    left:26px;
-    top:20px;
-    width:22px;
-    height:42px;
-    border-right:7px solid white;
-    border-bottom:7px solid white;
-    transform:rotate(45deg);
+.field input::placeholder { color: #9ca3af; }
+
+.field.sig input {
+  font-family: 'Dancing Script', cursive, Georgia;
+  font-size: 20px;
+  color: #7c3aed;
+  letter-spacing: 1px;
+  background: #faf5ff;
+  border-color: #ddd6fe;
 }
 
-.successText{
-    margin-top:18px;
-    font-size:18px;
-    font-weight:700;
+/* ── SUGGESTIONS ── */
+.suggestions {
+  position: absolute;
+  left: 0; right: 0;
+  top: calc(100% + 4px);
+  background: #fff;
+  border: 1.5px solid var(--amber);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 999;
+  box-shadow: 0 8px 32px rgba(0,0,0,0.12);
+  display: none;
 }
 
-/* =========================
-   LEGAL
-========================= */
-/* Legal container */
-.legal{
-    position: relative;
-    overflow-y: auto;
-    max-height: 240px;
-    scroll-behavior: smooth;
+.suggestions.open { display: block; }
+
+.suggestions::-webkit-scrollbar { width: 4px; }
+.suggestions::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 4px; }
+
+.sug-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--text2);
+  border-bottom: 1px solid #f3f4f6;
+  transition: background 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-/* Scroll arrow */
-.legal::after{
-    content: "⬇";
-    position: absolute;
-    right: 10px;
-    bottom: 10px;
+.sug-item:last-child { border-bottom: none; }
 
-    width: 28px;
-    height: 28px;
+.sug-item:hover, .sug-item.active-sug {
+  background: #fffbeb;
+  color: var(--navy);
+}
 
-    display: flex;
+.sug-item::before {
+  content: '›';
+  color: var(--amber);
+  font-weight: 700;
+}
+
+.sug-item mark {
+  background: none;
+  color: var(--amber);
+  font-weight: 800;
+}
+
+/* ── ERROR ── */
+.err {
+  color: var(--red);
+  font-size: 12px;
+  font-weight: 600;
+  margin-top: 5px;
+  display: none;
+  padding-left: 4px;
+}
+
+/* ── BUTTONS ── */
+.btn {
+  width: 100%;
+  padding: 15px 20px;
+  border: none;
+  border-radius: var(--radius-sm);
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 6px;
+}
+
+.btn-primary {
+  background: linear-gradient(135deg, var(--amber), #d97706);
+  color: #0a0f1e;
+  box-shadow: 0 4px 20px rgba(245,158,11,0.3);
+}
+
+.btn-primary:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(245,158,11,0.45); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-danger {
+  background: linear-gradient(135deg, var(--red), #b91c1c);
+  color: white;
+  box-shadow: 0 4px 20px rgba(239,68,68,0.25);
+}
+
+.btn-danger:hover { transform: translateY(-1px); box-shadow: 0 6px 28px rgba(239,68,68,0.38); }
+
+.btn-export {
+  background: linear-gradient(135deg, var(--green), #059669);
+  color: white;
+  box-shadow: 0 4px 20px rgba(16,185,129,0.25);
+}
+
+.btn-export:hover { transform: translateY(-1px); }
+
+.btn-blue {
+  background: linear-gradient(135deg, var(--blue), #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.25);
+}
+
+/* ── DIVIDER ── */
+.divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 22px 0;
+}
+
+/* ── TABLE ── */
+.table-wrap {
+  overflow-x: auto;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 16px;
+}
+
+.table-wrap::-webkit-scrollbar { height: 5px; }
+.table-wrap::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 5px; }
+
+table {
+  width: 100%;
+  min-width: 900px;
+  border-collapse: collapse;
+}
+
+thead th {
+  background: #f9fafb;
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  text-transform: uppercase;
+  color: var(--navy);
+  padding: 12px 14px;
+  text-align: left;
+  white-space: nowrap;
+  border-bottom: 1px solid var(--border);
+}
+
+tbody td {
+  padding: 12px 14px;
+  font-size: 13px;
+  color: var(--text2);
+  border-bottom: 1px solid #f3f4f6;
+  white-space: nowrap;
+  background: #fff;
+}
+
+tbody tr:last-child td { border-bottom: none; }
+
+tbody tr:hover td { background: #fafafa; color: var(--text); }
+
+.td-sig {
+  font-family: 'Dancing Script', cursive, Georgia;
+  font-size: 17px;
+  color: var(--amber2);
+}
+
+.badge-paid   { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(16,185,129,0.15); color:var(--green);   border:1px solid rgba(16,185,129,0.3); }
+.badge-unpaid { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(239,68,68,0.15);  color:var(--red);     border:1px solid rgba(239,68,68,0.3);  }
+.badge-status-in  { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(16,185,129,0.15); color:var(--green);   border:1px solid rgba(16,185,129,0.3); }
+.badge-status-out { display:inline-block; padding:3px 10px; border-radius:20px; font-size:11px; font-weight:700; background:rgba(100,116,139,0.15); color:var(--text3); border:1px solid rgba(100,116,139,0.3); }
+
+/* ── DATE CONTROLS ── */
+.report-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.report-controls input {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm);
+  border: 1.5px solid var(--border);
+  background: #f9fafb;
+  color: var(--text);
+  font-family: 'Nunito', sans-serif;
+  font-size: 14px;
+  -webkit-appearance: none;
+}
+
+.report-controls input:focus {
+  outline: none;
+  border-color: var(--amber);
+  background: #fff;
+}
+
+/* ── LEGAL ── */
+.legal-card {
+  background: #fffbeb;
+  border: 1px solid #fde68a;
+  border-radius: var(--radius);
+  padding: 18px 20px;
+  margin-bottom: 20px;
+  max-height: 160px;
+  overflow-y: auto;
+  font-size: 12px;
+  color: #78716c;
+  line-height: 1.7;
+}
+
+.legal-card strong {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: #92400e;
+  margin-bottom: 10px;
+}
+
+.legal-card::-webkit-scrollbar { width: 4px; }
+.legal-card::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 4px; }
+
+/* ── SUCCESS OVERLAY ── */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s;
+  backdrop-filter: blur(4px);
+}
+
+.success-overlay.show {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.success-card {
+  background: #111827;
+  border: 1px solid rgba(255,255,255,0.1);
+  border-radius: 28px;
+  padding: 36px 32px;
+  text-align: center;
+  transform: scale(0.7);
+  transition: transform 0.3s cubic-bezier(0.34,1.56,0.64,1);
+  min-width: 240px;
+}
+
+.success-overlay.show .success-card { transform: scale(1); }
+
+/* SVG circle */
+.check-svg {
+  display: block;
+  margin: 0 auto 18px;
+  width: 90px; height: 90px;
+}
+
+.check-circle {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 4;
+  stroke-linecap: round;
+  /* circumference of r=40 circle ≈ 251 */
+  stroke-dasharray: 251;
+  stroke-dashoffset: 251;
+}
+
+.check-tick {
+  fill: none;
+  stroke: #10b981;
+  stroke-width: 5;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  /* tick path length ≈ 50 */
+  stroke-dasharray: 50;
+  stroke-dashoffset: 50;
+}
+
+/* when overlay gets .show, restart animations */
+.success-overlay.show .check-circle {
+  animation: drawCircle 0.55s ease-out forwards;
+}
+
+.success-overlay.show .check-tick {
+  animation: drawTick 0.35s ease-out 0.5s forwards;
+}
+
+@keyframes drawCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes drawTick {
+  to { stroke-dashoffset: 0; }
+}
+
+.success-msg {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  color: #f1f5f9;
+  opacity: 0;
+  transform: translateY(6px);
+  transition: opacity 0.3s ease 0.75s, transform 0.3s ease 0.75s;
+}
+
+.success-overlay.show .success-msg {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── TABLET PORTRAIT — Galaxy Tab A9+/A11 ── */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 200px; }
+  .topbar { padding: 0 18px; }
+  .scroll { padding: 18px; }
+  .grid-2 { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 820px) {
+  .shell { flex-direction: column; }
+
+  .sidebar {
+    width: 100%;
+    min-width: unset;
+    flex-direction: row;
     align-items: center;
+    height: auto;
+    border-right: none;
+    border-bottom: 1px solid rgba(255,255,255,0.09);
+    padding: 8px 10px;
+    overflow-x: auto;
+    /* prevent sidebar shrinking its children */
+    flex-shrink: 0;
+  }
+
+  /* hide scrollbar on mobile nav bar */
+  .sidebar::-webkit-scrollbar { display: none; }
+  .sidebar { -ms-overflow-style: none; scrollbar-width: none; }
+
+  .sidebar::before { background-size: 24px 24px; }
+
+  .brand {
+    border-bottom: none;
+    padding: 4px 10px 4px 0;
+    border-right: 1px solid rgba(255,255,255,0.1);
+    flex-shrink: 0;
+  }
+  .brand-text span { display: none; }
+  .brand-text { font-size: 14px; }
+  .brand-icon { width: 34px; height: 34px; font-size: 16px; border-radius: 9px; }
+
+  .nav {
+    flex-direction: row;
+    padding: 0 8px;
+    gap: 6px;
+    /* don't shrink — let it overflow and scroll within sidebar */
+    flex-shrink: 0;
+  }
+
+  .nav-label { display: none; }
+
+  .navbtn {
+    /* fixed width so they never collapse to nothing */
+    flex: 0 0 auto;
+    width: 110px;
+    padding: 9px 10px;
     justify-content: center;
+    font-size: 13px;
+    gap: 5px;
+    white-space: nowrap;
+  }
 
-    font-size: 15px;
-    color: #007aff;
+  .navbtn.active::before { display: none; }
+  .navbtn .icon { width: auto; }
 
-    background: rgba(255,255,255,0.92);
-    border-radius: 50%;
-
-    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
-
-    pointer-events: none;
-
-    opacity: 1;
-
-    transition: opacity 0.35s ease;
+  .sidebar-footer { display: none; }
+  .topbar { display: none; }
+  .scroll { padding: 14px; }
 }
-
-/* Hide while scrolling down */
-.legal.hide-arrow::after{
-    opacity: 0;
-}
-
-/* Flash when scrolling up */
-.legal.show-arrow::after{
-    animation: pulseArrow 1.8s infinite;
-}
-
-/* Gentle flash */
-@keyframes pulseArrow{
-    0%{
-        transform: translateY(0);
-        opacity: 0.35;
-    }
-
-    50%{
-        transform: translateY(4px);
-        opacity: 1;
-    }
-
-    100%{
-        transform: translateY(0);
-        opacity: 0.35;
-    }
-}
-
-/* Optional title styling */
-.legal h2{
-    margin: 0 0 10px;
-    font-size: 16px;
-    font-weight: 700;
-    color: #0056cc;
-    letter-spacing: 0.5px;
-}
-
-/* Paragraph spacing */
-.legal p{
-    margin: 0 0 10px;
-}
-
-/* Better scrollbar for Android tablets */
-.legal::-webkit-scrollbar{
-    width: 6px;
-}
-
-.legal::-webkit-scrollbar-thumb{
-    background: #007aff;
-    border-radius: 20px;
-}
-
-.legal::-webkit-scrollbar-track{
-    background: transparent;
-}
-
-/* Mobile optimization */
-@media (max-width: 600px){
-    .legal{
-        padding: 14px;
-        border-radius: 14px;
-        font-size: 13px;
-        line-height: 1.5;
-        max-height: 200px;
-    }
-
-    .legal h2{
-        font-size: 15px;
-    }
-}
-
-/* =========================
-   FOOTER
-========================= */
-
-.footer{
-    text-align:center;
-    font-size:13px;
-    color:#777;
-    padding:20px;
-}
-
-/* =========================
-   MOBILE
-========================= */
-
-@media(max-width:900px){
-
-    .app{
-        flex-direction:column;
-    }
-
-    .sidebar{
-        width:100%;
-        display:flex;
-        gap:8px;
-        border-right:none;
-        border-bottom:1px solid #eee;
-    }
-
-    .navbtn{
-        flex:1;
-        margin-bottom:0;
-    }
-
-    .content{
-        padding:14px;
-    }
-
-    .card{
-        padding:18px;
-    }
-
-    .dateInput{
-        width:100%;
-        max-width:100%;
-    }
-
-}
-
 </style>
 </head>
-
 <body>
 
-<div class="header">
-ISKA Karate Attendance
+<div id="successOverlay" class="success-overlay">
+  <div class="success-card">
+    <svg class="check-svg" viewBox="0 0 90 90">
+      <!-- circle draws itself -->
+      <circle class="check-circle" cx="45" cy="45" r="38"
+              transform="rotate(-90 45 45)"/>
+      <!-- tick writes in: from ~(22,46) through (38,62) to (68,28) -->
+      <polyline class="check-tick" points="22,46 37,62 68,28"/>
+    </svg>
+    <div id="successMsg" class="success-msg">Done</div>
+  </div>
 </div>
 
-<!-- SUCCESS -->
-<div id="successOverlay" class="successOverlay">
-
-<div class="successCard">
-
-<div class="checkCircle"></div>
-
-<div id="successText" class="successText">
-Success
-</div>
-
-</div>
-
-</div>
-
-<div class="app">
-
-<!-- NAV -->
-<div class="sidebar">
-
-<button class="navbtn active"
-onclick="showPage('attendance',this)">
-Attendance
-</button>
-
-<button class="navbtn"
-onclick="showPage('payments',this)">
-Payments
-</button>
-
-<button class="navbtn"
-onclick="showPage('reports',this)">
-Reports
-</button>
-
-</div>
-
-<!-- MAIN -->
-<div class="main">
-
-<div class="content">
-
-<!-- =========================
-     ATTENDANCE
-========================= -->
-
-<div id="attendance" class="page active">
-
-<div class="card">
-
-<h2>Check-In</h2>
-
-<input id="studentIn"
-placeholder="Student Name">
-
-<div id="studentInSuggest"
-class="suggestions"></div>
-
-<div id="errStudentIn"
-class="error">
-Student required
-</div>
-
-<input id="parentIn"
-placeholder="Parent / Guardian">
-
-<div id="parentInSuggest"
-class="suggestions"></div>
-
-<div id="errParentIn"
-class="error">
-Parent required
-</div>
-
-<input id="relation"
-placeholder="Relationship">
-
-<div id="errRelation"
-class="error">
-Relationship required
-</div>
-
-<input id="signature"
-class="signature"
-placeholder="Signature"
-readonly>
-
-<button class="primary"
-onclick="checkIn()">
-Check In
-</button>
-
-<hr style="margin:30px 0;border:none;border-top:1px solid #eee;">
-
-<h2>Check-Out</h2>
-
-<input id="studentOut"
-placeholder="Student Name">
-
-<div id="studentOutSuggest"
-class="suggestions"></div>
-
-<div id="errStudentOut"
-class="error">
-Student required
-</div>
-
-<button class="danger"
-onclick="checkOut()">
-Check Out
-</button>
-
-</div>
-
-</div>
-
-<!-- =========================
-     PAYMENTS
-========================= -->
-
-<div id="payments" class="page">
-
-<div class="card">
-
-<h2>Payments</h2>
-
-<input id="payStudent"
-placeholder="Student Name">
-
-<div id="payStudentSuggest"
-class="suggestions"></div>
-
-<div id="errPayStudent"
-class="error">
-Student required
-</div>
-
-<input id="payParent"
-placeholder="Parent / Guardian">
-
-<div id="payParentSuggest"
-class="suggestions"></div>
-
-<div id="errPayParent"
-class="error">
-Parent required
-</div>
-
-<select id="payType">
-
-<option value="Cash" selected>
-Cash
-</option>
-
-<option value="Check">
-Check
-</option>
-
-<option value="Credit Card">
-Credit Card
-</option>
-
-<option value="Zelle">
-Zelle
-</option>
-
-<option value="Apple Pay">
-Apple Pay
-</option>
-
-<option value="Other">
-Other
-</option>
-
-</select>
-
-<input id="payAmount"
-placeholder="Amount">
-
-<div id="errPayAmount"
-class="error">
-Amount required
-</div>
-
-<select id="payMonth"
-class="dateInput"></select>
-
-<button class="primary"
-onclick="savePayment()">
-Save Payment
-</button>
-
-</div>
-
-</div>
-
-<!-- =========================
-     REPORTS
-========================= -->
-
-<div id="reports" class="page">
-
-<!-- ATTENDANCE REPORT -->
-<div class="card">
-
-<h2>Attendance Report</h2>
-
-<input type="date"
-id="attendanceDate"
-class="dateInput"
-onchange="loadAttendanceReport()">
-
-<div class="tableWrap">
-
-<table>
-
-<thead>
-
-<tr>
-<th>Date</th>
-<th>Student</th>
-<th>Status</th>
-<th>In</th>
-<th>Out</th>
-<th>Parent</th>
-<th>Relationship</th>
-<th>Signature</th>
-<th>Fee</th>
-</tr>
-
-</thead>
-
-<tbody id="attendanceLog"></tbody>
-
-</table>
-
-</div>
-
-<button class="export"
-onclick="exportAttendancePDF()">
-Export Attendance PDF
-</button>
-
-</div>
-
-<!-- PAYMENT REPORT -->
-<div class="card">
-
-<h2>Payment Report</h2>
-
-<input type="month"
-id="paymentReportMonth"
-class="dateInput"
-onchange="loadPaymentReport()">
-
-<div class="tableWrap">
-
-<table>
-
-<thead>
-
-<tr>
-<th>Payment Date</th>
-<th>Student</th>
-<th>Parent</th>
-<th>Month</th>
-<th>Type</th>
-<th>Amount</th>
-</tr>
-
-</thead>
-
-<tbody id="paymentLog"></tbody>
-
-</table>
-
-</div>
-
-<button class="export"
-onclick="exportPaymentPDF()">
-Export Payment PDF
-</button>
-
-</div>
-
-</div>
-
-<!-- LEGAL -->
-<div class="legal">
-
-<strong>LEGAL NOTICE</strong>
-
-  <p>
-
-    By using this attendance and payment system, all submitted information,
-
-    including attendance entries, payment records, timestamps, and electronic
-
-    acknowledgments, is considered an official business record.
-
-  </p>
-
-  <p>
-
-    Parent, guardian, student, or authorized representative signatures entered
-
-    electronically into this system constitute acknowledgment and confirmation
-
-    of the related attendance and/or payment activity.
-
-  </p>
-
-  <p>
-
-    Payment information recorded in this system may be used for billing,
-
-    tuition tracking, financial reporting, audit, dispute resolution, and
-
-    verification purposes.
-
-  </p>
-
-  <p>
-
-    All records are stored locally on the device unless manually exported,
-
-    backed up, synchronized, or transferred by an authorized administrator.
-
-    Users are responsible for maintaining the security and confidentiality of
-
-    the device and exported records.
-
-  </p>
-
-  <p>
-
-    Unauthorized access, alteration, deletion, duplication, falsification, or
-
-    misuse of attendance, payment, or signature data is strictly prohibited
-
-    and may result in disciplinary action, termination of access, civil
-
-    liability, and/or criminal penalties under applicable law.
-
-  </p>
-
-  <p>
-
-    By continuing to use this system, users acknowledge and agree to comply
-
-    with all applicable organizational policies, privacy requirements, and
-
-    recordkeeping procedures.
-
-  </p>
-</div>
-
-<!-- FOOTER -->
-<div class="footer">
-© 2026 ISKA Karate — All Rights Reserved | Author: Narayan Bhattarai
-</div>
-
-</div>
-</div>
+<div class="shell">
+
+  <!-- SIDEBAR -->
+  <div class="sidebar">
+    <div class="brand">
+      <div class="brand-badge">
+        <div class="brand-icon">🥋</div>
+        <div class="brand-text">
+          ISKA Karate
+          <span>Attendance System</span>
+        </div>
+      </div>
+    </div>
+
+    <nav class="nav">
+      <div class="nav-label">Navigation</div>
+      <button class="navbtn active" onclick="showPage('attendance',this)">
+        <span class="icon">☑️</span> Attendance
+      </button>
+      <button class="navbtn" onclick="showPage('payments',this)">
+        <span class="icon">💳</span> Payments
+      </button>
+      <button class="navbtn" onclick="showPage('reports',this)">
+        <span class="icon">📊</span> Reports
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      © 2026 ISKA Karate<br>
+      Author: Narayan Bhattarai
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Attendance</div>
+      <div class="topbar-date" id="topbarDate"></div>
+      <div class="status-dot"></div>
+    </div>
+
+    <div class="scroll">
+
+      <!-- ══ ATTENDANCE PAGE ══ -->
+      <div id="attendance" class="page active">
+        <div class="grid-2">
+
+          <!-- CHECK IN -->
+          <div class="card">
+            <div class="card-title">
+              Check-In <span class="badge badge-in">In</span>
+            </div>
+
+            <div class="field" style="position:relative">
+              <label>Student Name</label>
+              <input id="studentIn" placeholder="Type to search…" autocomplete="off">
+              <div id="studentInSuggest" class="suggestions"></div>
+              <div id="errStudentIn" class="err">⚠ Student required</div>
+            </div>
+
+            <div class="field" style="position:relative">
+              <label>Parent / Guardian</label>
+              <input id="parentIn" placeholder="Type to search…" autocomplete="off">
+              <div id="parentInSuggest" class="suggestions"></div>
+              <div id="errParentIn" class="err">⚠ Parent required</div>
+            </div>
+
+            <div class="field">
+              <label>Relationship</label>
+              <input id="relation" placeholder="e.g. Mother, Father, Guardian">
+              <div id="errRelation" class="err">⚠ Relationship required</div>
+            </div>
+
+            <div class="field sig">
+              <label>Signature (auto-filled)</label>
+              <input id="signature" placeholder="Signature" readonly>
+            </div>
+
+            <button class="btn btn-primary" onclick="checkIn()">
+              ☑️ Check In
+            </button>
+          </div>
+
+          <!-- CHECK OUT -->
+          <div class="card">
+            <div class="card-title">
+              Check-Out <span class="badge badge-out">Out</span>
+            </div>
+
+            <div class="field" style="position:relative">
+              <label>Student Name</label>
+              <input id="studentOut" placeholder="Type to search…" autocomplete="off">
+              <div id="studentOutSuggest" class="suggestions"></div>
+              <div id="errStudentOut" class="err">⚠ Student required</div>
+            </div>
+
+            <div style="height:16px"></div>
+            <p style="font-size:13px;color:#6b7280;line-height:1.6;margin-bottom:16px;">
+              Select the student who is leaving class. Their check-out time will be recorded automatically.
+            </p>
+
+            <button class="btn btn-danger" onclick="checkOut()">
+              🚪 Check Out
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ══ PAYMENTS PAGE ══ -->
+      <div id="payments" class="page">
+        <div class="card" style="max-width:600px">
+          <div class="card-title">
+            Record Payment <span class="badge badge-pay">Pay</span>
+          </div>
+
+          <div class="field" style="position:relative">
+            <label>Student Name</label>
+            <input id="payStudent" placeholder="Type to search…" autocomplete="off">
+            <div id="payStudentSuggest" class="suggestions"></div>
+            <div id="errPayStudent" class="err">⚠ Student required</div>
+          </div>
+
+          <div class="field" style="position:relative">
+            <label>Parent / Guardian</label>
+            <input id="payParent" placeholder="Type to search…" autocomplete="off">
+            <div id="payParentSuggest" class="suggestions"></div>
+            <div id="errPayParent" class="err">⚠ Parent required</div>
+          </div>
+
+          <div class="grid-2" style="gap:14px">
+            <div class="field">
+              <label>Payment Type</label>
+              <select id="payType">
+                <option value="Cash">Cash</option>
+                <option value="Check">Check</option>
+                <option value="Credit Card">Credit Card</option>
+                <option value="Zelle">Zelle</option>
+                <option value="Apple Pay">Apple Pay</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Amount ($)</label>
+              <input id="payAmount" placeholder="0.00">
+              <div id="errPayAmount" class="err">⚠ Amount required</div>
+            </div>
+          </div>
+
+          <div class="field">
+            <label>For Month</label>
+            <select id="payMonth"></select>
+          </div>
+
+          <button class="btn btn-primary" onclick="savePayment()">
+            💳 Save Payment
+          </button>
+        </div>
+      </div>
+
+      <!-- ══ REPORTS PAGE ══ -->
+      <div id="reports" class="page">
+
+        <!-- ATTENDANCE REPORT -->
+        <div class="card">
+          <div class="card-title">Attendance Report</div>
+          <div class="report-controls">
+            <input type="date" id="attendanceDate" onchange="loadAttendanceReport()">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th><th>Student</th><th>Status</th>
+                  <th>In</th><th>Out</th><th>Parent</th>
+                  <th>Relationship</th><th>Signature</th><th>Fee</th>
+                </tr>
+              </thead>
+              <tbody id="attendanceLog"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-export" onclick="exportAttendancePDF()">
+            📄 Export Attendance PDF
+          </button>
+        </div>
+
+        <!-- PAYMENT REPORT -->
+        <div class="card">
+          <div class="card-title">Payment Report</div>
+          <div class="report-controls">
+            <input type="month" id="paymentReportMonth" onchange="loadPaymentReport()">
+          </div>
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Date</th><th>Student</th><th>Parent</th>
+                  <th>Month</th><th>Type</th><th>Amount</th>
+                </tr>
+              </thead>
+              <tbody id="paymentLog"></tbody>
+            </table>
+          </div>
+          <button class="btn btn-export" onclick="exportPaymentPDF()">
+            📄 Export Payment PDF
+          </button>
+        </div>
+
+      </div>
+
+      <!-- LEGAL -->
+      <div class="legal-card">
+        <strong>Legal Notice</strong>
+        By using this attendance and payment system, all submitted information — including attendance entries, payment records, timestamps, and electronic acknowledgments — is considered an official business record.
+        Parent, guardian, student, or authorized representative signatures entered electronically into this system constitute acknowledgment and confirmation of the related activity.
+        Payment information may be used for billing, tuition tracking, financial reporting, audit, dispute resolution, and verification purposes.
+        All records are stored locally on the device unless manually exported by an authorized administrator. Unauthorized access, alteration, deletion, or misuse of data is strictly prohibited and may result in civil liability and/or criminal penalties.
+        By continuing to use this system, users acknowledge and agree to comply with all applicable organizational policies, privacy requirements, and recordkeeping procedures.
+      </div>
+
+    </div><!-- /scroll -->
+  </div><!-- /main -->
+</div><!-- /shell -->
 
 <script>
-function goFullscreen() {
-    const el = document.documentElement;
-
-    if (el.requestFullscreen) {
-        el.requestFullscreen();
-    } else if (el.webkitRequestFullscreen) {
-        el.webkitRequestFullscreen();
-    }
+/* ── FULLSCREEN ── */
+function goFullscreen(){
+  const el=document.documentElement;
+  if(el.requestFullscreen) el.requestFullscreen();
+  else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen();
 }
+document.addEventListener("touchstart", goFullscreen, {once:true});
 
-// trigger on first interaction anywhere
-document.addEventListener("touchstart", goFullscreen, { once: true });
-/* =========================
-   PAGE SWITCH
-========================= */
+/* ── TOPBAR DATE ── */
+function updateTopbarDate(){
+  const d=new Date();
+  document.getElementById("topbarDate").textContent=
+    d.toLocaleDateString("en-US",{weekday:"long",year:"numeric",month:"long",day:"numeric"});
+}
+updateTopbarDate();
 
+/* ── PAGE SWITCH ── */
+const pageTitles={attendance:"Attendance",payments:"Payments",reports:"Reports"};
 function showPage(id,btn){
-
-document.querySelectorAll(".page")
-.forEach(p=>p.classList.remove("active"));
-
-document.getElementById(id)
-.classList.add("active");
-
-document.querySelectorAll(".navbtn")
-.forEach(b=>b.classList.remove("active"));
-
-btn.classList.add("active");
-
+  document.querySelectorAll(".page").forEach(p=>p.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+  document.querySelectorAll(".navbtn").forEach(b=>b.classList.remove("active"));
+  btn.classList.add("active");
+  document.getElementById("topbarTitle").textContent=pageTitles[id]||id;
 }
 
-/* =========================
-   DATE
-========================= */
+/* ── DATE HELPERS ── */
+function today(){ return new Date().toISOString().split("T")[0]; }
 
-function today(){
-return new Date().toISOString().split("T")[0];
+/* ── STORAGE ── */
+function getAttendance(date){ return JSON.parse(localStorage.getItem("attendance_"+date)||"[]"); }
+function saveAttendance(date,data){ localStorage.setItem("attendance_"+date,JSON.stringify(data)); }
+function getPayments(){ return JSON.parse(localStorage.getItem("payments")||"[]"); }
+function savePayments(data){ localStorage.setItem("payments",JSON.stringify(data)); }
+
+/* ── NORMALIZE ── */
+function norm(v){ return v.trim().toLowerCase(); }
+
+/* ── SIGNATURE AUTO-FILL ── */
+function setSignatureFrom(val){
+  document.getElementById("signature").value = val;
 }
-
-/* =========================
-   STORAGE
-========================= */
-
-function attendanceKey(date){
-return "attendance_"+date;
-}
-
-function getAttendance(date){
-return JSON.parse(
-localStorage.getItem(attendanceKey(date))||"[]"
-);
-}
-
-function saveAttendance(date,data){
-localStorage.setItem(
-attendanceKey(date),
-JSON.stringify(data)
-);
-}
-
-function getPayments(){
-return JSON.parse(
-localStorage.getItem("payments")||"[]"
-);
-}
-
-function savePayments(data){
-localStorage.setItem(
-"payments",
-JSON.stringify(data)
-);
-}
-
-/* =========================
-   NORMALIZE
-========================= */
-
-function normalize(v){
-return v.trim().toLowerCase();
-}
-
-/* =========================
-   SIGNATURE
-========================= */
-
-parentIn.addEventListener("input",()=>{
-signature.value=parentIn.value;
+document.getElementById("parentIn").addEventListener("input", function(){
+  setSignatureFrom(this.value);
 });
 
-/* =========================
-   SUCCESS
-========================= */
-
-function showSuccess(message){
-
-successText.innerText=message;
-
-successOverlay.classList.add("show");
-
-setTimeout(()=>{
-successOverlay.classList.remove("show");
-},1800);
-
+/* ── SUCCESS ── */
+function showSuccess(msg){
+  document.getElementById("successMsg").textContent=msg;
+  const ov=document.getElementById("successOverlay");
+  // Remove first so animation restarts cleanly if triggered again quickly
+  ov.classList.remove("show");
+  // Force reflow so the browser resets the animation state
+  void ov.offsetWidth;
+  ov.classList.add("show");
+  setTimeout(()=>ov.classList.remove("show"),2200);
 }
 
-/* =========================
-   ERRORS
-========================= */
+/* ── ERRORS ── */
+function setErr(id,show){ document.getElementById(id).style.display=show?"block":"none"; }
 
-function showError(id,show){
-
-document.getElementById(id).style.display=
-show ? "block" : "none";
-
-}
-
-/* =========================
-   PAYMENT MONTHS
-========================= */
-
+/* ── PAYMENT MONTHS ── */
 function loadPaymentMonths(){
-
-payMonth.innerHTML="";
-
-const now=new Date();
-
-for(let i=-12;i<=1;i++){
-
-let d=new Date(
-now.getFullYear(),
-now.getMonth()+i,
-1
-);
-
-let val=
-d.getFullYear()+
-"-"+
-String(d.getMonth()+1).padStart(2,"0");
-
-let opt=document.createElement("option");
-
-opt.value=val;
-opt.textContent=val;
-
-if(i===0){
-opt.selected=true;
+  const sel=document.getElementById("payMonth");
+  sel.innerHTML="";
+  const now=new Date();
+  for(let i=-12;i<=1;i++){
+    const d=new Date(now.getFullYear(),now.getMonth()+i,1);
+    const val=d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0");
+    const opt=document.createElement("option");
+    opt.value=val; opt.textContent=val;
+    if(i===0) opt.selected=true;
+    sel.appendChild(opt);
+  }
 }
 
-payMonth.appendChild(opt);
-
-}
-
-}
-
-/* =========================
-   CHECK IN
-========================= */
-
+/* ── CHECK IN ── */
 function checkIn(){
+  const sIn=document.getElementById("studentIn");
+  const pIn=document.getElementById("parentIn");
+  const rel=document.getElementById("relation");
+  const sig=document.getElementById("signature");
+  const aDate=document.getElementById("attendanceDate");
 
-let valid=true;
+  let ok=true;
+  if(!sIn.value.trim()){ setErr("errStudentIn",true);  ok=false; } else setErr("errStudentIn",false);
+  if(!pIn.value.trim()){ setErr("errParentIn",true);   ok=false; } else setErr("errParentIn",false);
+  if(!rel.value.trim()){ setErr("errRelation",true);   ok=false; } else setErr("errRelation",false);
+  if(!ok) return;
 
-if(!studentIn.value.trim()){
-showError("errStudentIn",true);
-valid=false;
-}else{
-showError("errStudentIn",false);
+  const date=aDate.value;
+  const paid=getPayments().find(p=>norm(p.student)===norm(sIn.value) && p.month===date.slice(0,7));
+  const data=getAttendance(date);
+
+  data.push({
+    date, student:sIn.value.trim(), status:"IN",
+    in:new Date().toLocaleTimeString(), out:"",
+    parent:pIn.value.trim(), relationship:rel.value.trim(),
+    signature:sig.value.trim(), fee:paid?"PAID":"UNPAID"
+  });
+  saveAttendance(date,data);
+
+  sIn.value=""; pIn.value=""; rel.value=""; sig.value="";
+  closeAll();
+  loadAttendanceReport();
+  showSuccess("Checked In Successfully");
 }
 
-if(!parentIn.value.trim()){
-showError("errParentIn",true);
-valid=false;
-}else{
-showError("errParentIn",false);
-}
-
-if(!relation.value.trim()){
-showError("errRelation",true);
-valid=false;
-}else{
-showError("errRelation",false);
-}
-
-if(!valid) return;
-
-let date=attendanceDate.value;
-
-let feeStatus="UNPAID";
-
-let paid=getPayments().find(p=>
-
-normalize(p.student)===
-normalize(studentIn.value)
-
-&&
-
-p.month===date.slice(0,7)
-
-);
-
-if(paid){
-feeStatus="PAID";
-}
-
-let data=getAttendance(date);
-
-data.push({
-
-date,
-student:studentIn.value.trim(),
-status:"IN",
-in:new Date().toLocaleTimeString(),
-out:"",
-parent:parentIn.value.trim(),
-relationship:relation.value.trim(),
-signature:signature.value.trim(),
-fee:feeStatus
-
-});
-
-saveAttendance(date,data);
-
-studentIn.value="";
-parentIn.value="";
-relation.value="";
-signature.value="";
-
-loadAttendanceReport();
-
-showSuccess("Successfully Checked In");
-
-}
-
-/* =========================
-   CHECK OUT
-========================= */
-
+/* ── CHECK OUT ── */
 function checkOut(){
+  const sOut=document.getElementById("studentOut");
+  const aDate=document.getElementById("attendanceDate");
+  if(!sOut.value.trim()){ setErr("errStudentOut",true); return; }
+  setErr("errStudentOut",false);
 
-if(!studentOut.value.trim()){
-showError("errStudentOut",true);
-return;
+  const date=aDate.value;
+  const data=getAttendance(date);
+  const rec=data.find(x=>norm(x.student)===norm(sOut.value) && x.status==="IN");
+  if(rec){ rec.status="OUT"; rec.out=new Date().toLocaleTimeString(); saveAttendance(date,data); }
+
+  sOut.value=""; closeAll();
+  loadAttendanceReport();
+  showSuccess("Checked Out Successfully");
 }
 
-showError("errStudentOut",false);
-
-let date=attendanceDate.value;
-
-let data=getAttendance(date);
-
-let rec=data.find(x=>
-
-normalize(x.student)===
-normalize(studentOut.value)
-
-&& x.status==="IN"
-
-);
-
-if(rec){
-
-rec.status="OUT";
-
-rec.out=new Date().toLocaleTimeString();
-
-saveAttendance(date,data);
-
-}
-
-studentOut.value="";
-
-loadAttendanceReport();
-
-showSuccess("Successfully Checked Out");
-
-}
-
-/* =========================
-   SAVE PAYMENT
-========================= */
-
+/* ── SAVE PAYMENT ── */
 function savePayment(){
+  const pStu=document.getElementById("payStudent");
+  const pPar=document.getElementById("payParent");
+  const pAmt=document.getElementById("payAmount");
+  const pTyp=document.getElementById("payType");
+  const pMon=document.getElementById("payMonth");
 
-let valid=true;
+  let ok=true;
+  if(!pStu.value.trim()){ setErr("errPayStudent",true);  ok=false; } else setErr("errPayStudent",false);
+  if(!pPar.value.trim()){ setErr("errPayParent",true);   ok=false; } else setErr("errPayParent",false);
+  if(!pAmt.value.trim()){ setErr("errPayAmount",true);   ok=false; } else setErr("errPayAmount",false);
+  if(!ok) return;
 
-if(!payStudent.value.trim()){
-showError("errPayStudent",true);
-valid=false;
-}else{
-showError("errPayStudent",false);
+  const payments=getPayments();
+  payments.push({
+    paymentDate:new Date().toLocaleDateString(),
+    student:pStu.value.trim(), parent:pPar.value.trim(),
+    type:pTyp.value, amount:pAmt.value, month:pMon.value
+  });
+  savePayments(payments);
+
+  // Sync fee in attendance
+  Object.keys(localStorage).filter(k=>k.startsWith("attendance_")).forEach(key=>{
+    const recs=JSON.parse(localStorage.getItem(key)||"[]");
+    recs.forEach(r=>{
+      if(norm(r.student)===norm(pStu.value) && r.date.slice(0,7)===pMon.value) r.fee="PAID";
+    });
+    localStorage.setItem(key,JSON.stringify(recs));
+  });
+
+  pStu.value=""; pPar.value=""; pAmt.value="";
+  closeAll();
+  loadPaymentReport(); loadAttendanceReport();
+  showSuccess("Payment Saved");
 }
 
-if(!payParent.value.trim()){
-showError("errPayParent",true);
-valid=false;
-}else{
-showError("errPayParent",false);
-}
-
-if(!payAmount.value.trim()){
-showError("errPayAmount",true);
-valid=false;
-}else{
-showError("errPayAmount",false);
-}
-
-if(!valid) return;
-
-let payments=getPayments();
-
-payments.push({
-
-paymentDate:new Date().toLocaleDateString(),
-
-student:payStudent.value.trim(),
-
-parent:payParent.value.trim(),
-
-type:payType.value,
-
-amount:payAmount.value,
-
-month:payMonth.value
-
-});
-
-savePayments(payments);
-
-/* SYNC FEES */
-
-Object.keys(localStorage)
-
-.filter(k=>k.startsWith("attendance_"))
-
-.forEach(key=>{
-
-let records=
-JSON.parse(localStorage.getItem(key)||"[]");
-
-records.forEach(r=>{
-
-if(
-
-normalize(r.student)===
-normalize(payStudent.value)
-
-&&
-
-r.date.slice(0,7)===payMonth.value
-
-){
-
-r.fee="PAID";
-
-}
-
-});
-
-localStorage.setItem(
-key,
-JSON.stringify(records)
-);
-
-});
-
-payStudent.value="";
-payParent.value="";
-payAmount.value="";
-
-loadPaymentReport();
-loadAttendanceReport();
-
-showSuccess("Payment Saved");
-
-}
-
-/* =========================
-   ATTENDANCE REPORT
-========================= */
-
+/* ── REPORTS ── */
 function loadAttendanceReport(){
-
-let data=getAttendance(attendanceDate.value);
-
-attendanceLog.innerHTML="";
-
-data.forEach(r=>{
-
-attendanceLog.innerHTML+=`
-
-<tr>
-
-<td>${r.date}</td>
-
-<td>${r.student}</td>
-
-<td>${r.status}</td>
-
-<td>${r.in}</td>
-
-<td>${r.out}</td>
-
-<td>${r.parent}</td>
-
-<td>${r.relationship}</td>
-
-<td class="signature">${r.signature}</td>
-
-<td>${r.fee}</td>
-
-</tr>
-
-`;
-
-});
-
+  const date=document.getElementById("attendanceDate").value;
+  const data=getAttendance(date);
+  document.getElementById("attendanceLog").innerHTML=data.map(r=>`
+    <tr>
+      <td>${r.date}</td>
+      <td>${r.student}</td>
+      <td><span class="badge-status-${r.status.toLowerCase()}">${r.status}</span></td>
+      <td>${r.in}</td>
+      <td>${r.out||"—"}</td>
+      <td>${r.parent}</td>
+      <td>${r.relationship}</td>
+      <td class="td-sig">${r.signature}</td>
+      <td><span class="${r.fee==="PAID"?"badge-paid":"badge-unpaid"}">${r.fee}</span></td>
+    </tr>`).join("");
 }
-
-/* =========================
-   PAYMENT REPORT
-========================= */
 
 function loadPaymentReport(){
-
-let selected=
-paymentReportMonth.value;
-
-let data=getPayments();
-
-if(selected){
-
-data=data.filter(p=>
-
-p.month===selected
-
-);
-
+  const sel=document.getElementById("paymentReportMonth").value;
+  let data=getPayments();
+  if(sel) data=data.filter(p=>p.month===sel);
+  document.getElementById("paymentLog").innerHTML=data.map(r=>`
+    <tr>
+      <td>${r.paymentDate}</td><td>${r.student}</td><td>${r.parent}</td>
+      <td>${r.month}</td><td>${r.type}</td><td>$${r.amount}</td>
+    </tr>`).join("");
 }
 
-paymentLog.innerHTML="";
-
-data.forEach(r=>{
-
-paymentLog.innerHTML+=`
-
-<tr>
-
-<td>${r.paymentDate}</td>
-
-<td>${r.student}</td>
-
-<td>${r.parent}</td>
-
-<td>${r.month}</td>
-
-<td>${r.type}</td>
-
-<td>${r.amount}</td>
-
-</tr>
-
-`;
-
-});
-
-}
-
-/* =========================
-   EXPORT ATTENDANCE
-========================= */
-
+/* ── PDF EXPORTS ── */
 function exportAttendancePDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:"landscape"});
+  const date=document.getElementById("attendanceDate").value;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(15);
+  doc.text("ISKA Karate — Attendance Report: "+date, 14, 16);
 
-const {jsPDF}=window.jspdf;
-
-const doc=new jsPDF();
-
-doc.text(
-"Attendance Report - "+attendanceDate.value,
-14,
-15
-);
-
-let data=getAttendance(attendanceDate.value);
-
-doc.autoTable({
-
-head:[[
-"Date",
-"Student",
-"Status",
-"In",
-"Out",
-"Parent",
-"Relationship",
-"Signature",
-"Fee"
-]],
-
-body:data.map(r=>[
-r.date,
-r.student,
-r.status,
-r.in,
-r.out,
-r.parent,
-r.relationship,
-r.signature,
-r.fee
-]),
-
-startY:25
-
-});
-
-doc.save(
-"attendance_"+attendanceDate.value+".pdf"
-);
-
+  doc.autoTable({
+    head:[["Date","Student","Status","In","Out","Parent","Relationship","Signature","Fee"]],
+    body:getAttendance(date).map(r=>[r.date,r.student,r.status,r.in,r.out||"—",r.parent,r.relationship,r.signature,r.fee]),
+    startY:22,
+    styles:{fontSize:9,cellPadding:4},
+    headStyles:{fillColor:[245,158,11],textColor:[10,15,30],fontStyle:"bold"},
+    alternateRowStyles:{fillColor:[245,247,250]},
+    didParseCell(data){
+      if(data.section==="body" && data.column.index===7){
+        data.cell.styles.fontStyle="italic";
+        data.cell.styles.fontSize=11;
+        data.cell.styles.textColor=[90,60,180];
+      }
+    }
+  });
+  doc.save("attendance_"+date+".pdf");
 }
-
-/* =========================
-   EXPORT PAYMENTS
-========================= */
 
 function exportPaymentPDF(){
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF();
+  const month=document.getElementById("paymentReportMonth").value;
+  doc.setFont("helvetica","bold");
+  doc.setFontSize(15);
+  doc.text("ISKA Karate — Payment Report: "+month, 14, 16);
 
-const {jsPDF}=window.jspdf;
+  let data=getPayments();
+  if(month) data=data.filter(p=>p.month===month);
 
-const doc=new jsPDF();
-
-let month=paymentReportMonth.value;
-
-doc.text(
-"Payment Report - "+month,
-14,
-15
-);
-
-let data=getPayments();
-
-if(month){
-
-data=data.filter(p=>
-p.month===month
-);
-
+  doc.autoTable({
+    head:[["Date","Student","Parent","Month","Type","Amount"]],
+    body:data.map(r=>[r.paymentDate,r.student,r.parent,r.month,r.type,"$"+r.amount]),
+    startY:22,
+    styles:{fontSize:10,cellPadding:4},
+    headStyles:{fillColor:[245,158,11],textColor:[10,15,30],fontStyle:"bold"},
+    alternateRowStyles:{fillColor:[245,247,250]}
+  });
+  doc.save("payments_"+month+".pdf");
 }
 
-doc.autoTable({
-
-head:[[
-"Payment Date",
-"Student",
-"Parent",
-"Month",
-"Type",
-"Amount"
-]],
-
-body:data.map(r=>[
-r.paymentDate,
-r.student,
-r.parent,
-r.month,
-r.type,
-r.amount
-]),
-
-startY:25
-
-});
-
-doc.save(
-"payments_"+month+".pdf"
-);
-
-}
-
-/* =========================
-   AUTOCOMPLETE
-========================= */
-
+/* ══════════════════════════════════════════
+   AUTOCOMPLETE — FIXED
+   The key fix: when a suggestion is tapped/clicked,
+   we set the value AND manually fire the "input"
+   event so any listeners (like the signature sync)
+   pick it up.
+══════════════════════════════════════════ */
 function getAllStudents(){
-
-let names=[];
-
-Object.keys(localStorage)
-
-.filter(k=>k.startsWith("attendance_"))
-
-.forEach(k=>{
-
-let data=
-JSON.parse(localStorage.getItem(k)||"[]");
-
-data.forEach(r=>{
-if(r.student){
-names.push(r.student);
-}
-});
-
-});
-
-return [...new Set(names)];
-
+  const names=[];
+  Object.keys(localStorage).filter(k=>k.startsWith("attendance_")).forEach(k=>{
+    JSON.parse(localStorage.getItem(k)||"[]").forEach(r=>{ if(r.student) names.push(r.student); });
+  });
+  return [...new Set(names)];
 }
 
 function getAllParents(){
-
-let names=[];
-
-Object.keys(localStorage)
-
-.filter(k=>k.startsWith("attendance_"))
-
-.forEach(k=>{
-
-let data=
-JSON.parse(localStorage.getItem(k)||"[]");
-
-data.forEach(r=>{
-if(r.parent){
-names.push(r.parent);
-}
-});
-
-});
-
-return [...new Set(names)];
-
+  const names=[];
+  Object.keys(localStorage).filter(k=>k.startsWith("attendance_")).forEach(k=>{
+    JSON.parse(localStorage.getItem(k)||"[]").forEach(r=>{ if(r.parent) names.push(r.parent); });
+  });
+  return [...new Set(names)];
 }
 
-function score(text,input){
-
-text=text.toLowerCase();
-input=input.toLowerCase();
-
-if(text===input) return 100;
-
-if(text.startsWith(input)) return 80;
-
-if(text.includes(input)) return 60;
-
-let matches=0;
-
-input.split("").forEach(ch=>{
-if(text.includes(ch)){
-matches++;
-}
-});
-
-return matches*5;
-
+function filterNames(names, input){
+  const q=input.toLowerCase();
+  return names
+    .filter(n=>n.toLowerCase().includes(q))
+    .sort((a,b)=>{
+      const as=a.toLowerCase().startsWith(q), bs=b.toLowerCase().startsWith(q);
+      if(as&&!bs) return -1; if(!as&&bs) return 1;
+      return a.localeCompare(b);
+    })
+    .slice(0,6);
 }
 
-function setupSuggestion(
-inputId,
-boxId,
-type
-){
+function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
 
-const input=
-document.getElementById(inputId);
-
-const box=
-document.getElementById(boxId);
-
-input.addEventListener("input",()=>{
-
-let value=input.value.trim();
-
-box.innerHTML="";
-
-if(!value) return;
-
-let source=
-type==="student"
-? getAllStudents()
-: getAllParents();
-
-source
-
-.map(name=>({
-name,
-score:score(name,value)
-}))
-
-.filter(x=>x.score>0)
-
-.sort((a,b)=>b.score-a.score)
-
-.slice(0,6)
-
-.forEach(item=>{
-
-let div=
-document.createElement("div");
-
-div.className=
-"suggestion-item";
-
-div.innerText=item.name;
-
-div.onclick=()=>{
-
-input.value=item.name;
-
-box.innerHTML="";
-
-};
-
-box.appendChild(div);
-
-});
-
-});
-
+function highlight(name, input){
+  const idx=name.toLowerCase().indexOf(input.toLowerCase());
+  if(idx===-1) return esc(name);
+  return esc(name.slice(0,idx))+"<mark>"+esc(name.slice(idx,idx+input.length))+"</mark>"+esc(name.slice(idx+input.length));
 }
 
-/* =========================
-   INIT
-========================= */
+/* Close all open suggestion boxes */
+function closeAll(){
+  document.querySelectorAll(".suggestions").forEach(b=>b.classList.remove("open"));
+}
 
+function setupSuggestion(inputId, boxId, type, onSelect){
+  const input=document.getElementById(inputId);
+  const box=document.getElementById(boxId);
+
+  input.addEventListener("input", ()=>{
+    const val=input.value.trim();
+    box.innerHTML=""; box.classList.remove("open");
+    if(!val) return;
+
+    const source=type==="student" ? getAllStudents() : getAllParents();
+    const matches=filterNames(source, val);
+    if(!matches.length) return;
+
+    matches.forEach(name=>{
+      const div=document.createElement("div");
+      div.className="sug-item";
+      div.innerHTML=highlight(name,val);
+
+      /* ── THE FIX ──
+         Use touchend + mousedown so it fires reliably on
+         Android tablets before the blur event hides the box.
+         After setting the value we dispatch a real "input"
+         event so all listeners (e.g. signature sync) fire. */
+      function pick(e){
+        e.preventDefault();
+        input.value=name;
+        // Fire the input event so signature / any watcher updates
+        input.dispatchEvent(new Event("input",{bubbles:true}));
+        // Run the optional extra callback (e.g. to copy parent → signature)
+        if(typeof onSelect==="function") onSelect(name);
+        box.classList.remove("open");
+        box.innerHTML="";
+      }
+
+      div.addEventListener("mousedown", pick);
+      div.addEventListener("touchend", pick, {passive:false});
+      box.appendChild(div);
+    });
+
+    box.classList.add("open");
+  });
+
+  input.addEventListener("blur", ()=>{
+    setTimeout(()=>{ box.classList.remove("open"); }, 200);
+  });
+}
+
+/* ── INIT ── */
 window.onload=()=>{
+  document.getElementById("attendanceDate").value=today();
+  document.getElementById("paymentReportMonth").value=today().slice(0,7);
+  loadPaymentMonths();
+  loadAttendanceReport();
+  loadPaymentReport();
 
-attendanceDate.value=today();
+  setupSuggestion("studentIn",  "studentInSuggest",  "student");
 
-paymentReportMonth.value=
-today().slice(0,7);
+  // parentIn selection must also update the signature field
+  setupSuggestion("parentIn",   "parentInSuggest",   "parent", (name)=>{
+    setSignatureFrom(name);
+  });
 
-loadPaymentMonths();
-
-loadAttendanceReport();
-
-loadPaymentReport();
-
-setupSuggestion(
-"studentIn",
-"studentInSuggest",
-"student"
-);
-
-setupSuggestion(
-"parentIn",
-"parentInSuggest",
-"parent"
-);
-
-setupSuggestion(
-"studentOut",
-"studentOutSuggest",
-"student"
-);
-
-setupSuggestion(
-"payStudent",
-"payStudentSuggest",
-"student"
-);
-
-setupSuggestion(
-"payParent",
-"payParentSuggest",
-"parent"
-);
-
+  setupSuggestion("studentOut", "studentOutSuggest", "student");
+  setupSuggestion("payStudent", "payStudentSuggest", "student");
+  setupSuggestion("payParent",  "payParentSuggest",  "parent");
 };
-const legal = document.querySelector('.legal');
-
-let lastScrollTop = 0;
-
-legal.classList.add('show-arrow');
-
-legal.addEventListener('scroll', () => {
-
-    const currentScroll = legal.scrollTop;
-
-    /* User scrolling DOWN */
-
-    if(currentScroll > lastScrollTop + 2){
-
-        legal.classList.remove('show-arrow');
-
-        legal.classList.add('hide-arrow');
-
-    }
-
-    /* User scrolling UP */
-
-    else if(currentScroll < lastScrollTop - 2){
-
-        /* Only show if not at bottom */
-
-        if(
-
-            currentScroll + legal.clientHeight
-
-            < legal.scrollHeight - 5
-
-        ){
-
-            legal.classList.remove('hide-arrow');
-
-            legal.classList.add('show-arrow');
-
-        }
-
-    }
-
-    /* Hide at bottom */
-
-    if(
-
-        currentScroll + legal.clientHeight
-
-        >= legal.scrollHeight - 5
-
-    ){
-
-        legal.classList.remove('show-arrow');
-
-        legal.classList.add('hide-arrow');
-
-    }
-
-    lastScrollTop = currentScroll;
-
-});
 </script>
-
 </body>
 </html>
