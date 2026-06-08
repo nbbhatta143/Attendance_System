@@ -7,755 +7,433 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="ISKA Karate">
-<meta name="application-name" content="ISKA Karate">
-<meta name="theme-color" content="#0a0f1e">
+<meta name="theme-color" content="#0d1117">
 <title>ISKA Karate Attendance</title>
-
-<!-- Fonts — Dancing Script loaded so signature field renders correctly -->
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Nunito:wght@400;500;600;700&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Dancing+Script:wght@600&display=swap" rel="stylesheet">
 
-<!-- PDF libs -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
-
-<!-- ══ ICON + PWA MANIFEST ══
-     All drawing happens here (once) so the same PNG is reused
-     for the manifest, the apple-touch-icon, the favicon, and
-     the sidebar brand badge. No duplicate canvas work. -->
 <script>
-window._iconPNG = null;
+/* ── roundRect polyfill ── */
+(function(){
+  try {
+    var tc = document.createElement('canvas').getContext('2d');
+    if (typeof tc.roundRect !== 'function') {
+      CanvasRenderingContext2D.prototype.roundRect = function(x,y,w,h,r) {
+        r = Math.min(r||0, w/2, h/2);
+        this.moveTo(x+r,y); this.lineTo(x+w-r,y);
+        this.quadraticCurveTo(x+w,y,x+w,y+r); this.lineTo(x+w,y+h-r);
+        this.quadraticCurveTo(x+w,y+h,x+w-r,y+h); this.lineTo(x+r,y+h);
+        this.quadraticCurveTo(x,y+h,x,y+h-r); this.lineTo(x,y+r);
+        this.quadraticCurveTo(x,y,x+r,y); this.closePath(); return this;
+      };
+    }
+  } catch(e) {}
+})();
 
-function buildGiIcon(size){
-  const c = document.createElement('canvas');
-  c.width = c.height = size;
-  const s = size / 512;
-  const g = c.getContext('2d');
-  const r = 90*s;
-
-  // Rounded bg
-  g.beginPath();
-  g.moveTo(r,0); g.arcTo(size,0,size,size,r);
-  g.arcTo(size,size,0,size,r); g.arcTo(0,size,0,0,r);
-  g.arcTo(0,0,size,0,r); g.closePath();
-  const bg=g.createLinearGradient(0,0,size,size);
-  bg.addColorStop(0,'#131d35'); bg.addColorStop(1,'#0a0f1e');
-  g.fillStyle=bg; g.fill();
-  g.save(); g.clip();
-
-  // Radial amber glow
-  const glow=g.createRadialGradient(size*.5,size*.42,0,size*.5,size*.42,size*.45);
-  glow.addColorStop(0,'rgba(245,158,11,0.22)'); glow.addColorStop(1,'rgba(0,0,0,0)');
-  g.fillStyle=glow; g.fillRect(0,0,size,size);
-
-  const p=(x,y)=>[x*s,y*s];
-
-  // Left gi panel
-  g.beginPath(); g.moveTo(...p(256,148)); g.lineTo(...p(188,232));
-  g.lineTo(...p(205,440)); g.lineTo(...p(256,400)); g.closePath();
-  g.fillStyle='rgba(255,255,255,0.93)'; g.fill();
-  g.strokeStyle='rgba(0,0,0,0.1)'; g.lineWidth=2*s; g.stroke();
-
-  // Right gi panel
-  g.beginPath(); g.moveTo(...p(256,148)); g.lineTo(...p(324,232));
-  g.lineTo(...p(307,440)); g.lineTo(...p(256,400)); g.closePath();
-  g.fillStyle='rgba(228,228,228,0.93)'; g.fill();
-  g.strokeStyle='rgba(0,0,0,0.08)'; g.stroke();
-
-  // Lapel fold
-  g.beginPath(); g.moveTo(...p(256,148)); g.lineTo(...p(238,198));
-  g.lineTo(...p(256,248)); g.lineTo(...p(274,198)); g.closePath();
-  g.fillStyle='rgba(205,205,210,0.95)'; g.fill();
-
-  // Left sleeve
-  g.beginPath(); g.moveTo(...p(190,232)); g.lineTo(...p(112,188));
-  g.lineTo(...p(96,256)); g.lineTo(...p(195,284)); g.closePath();
-  g.fillStyle='rgba(255,255,255,0.88)'; g.fill();
-  g.strokeStyle='rgba(0,0,0,0.07)'; g.stroke();
-
-  // Right sleeve
-  g.beginPath(); g.moveTo(...p(322,232)); g.lineTo(...p(400,188));
-  g.lineTo(...p(416,256)); g.lineTo(...p(317,284)); g.closePath();
-  g.fillStyle='rgba(228,228,228,0.88)'; g.fill();
-  g.strokeStyle='rgba(0,0,0,0.07)'; g.stroke();
-
-  // Centre stitch line
-  g.beginPath(); g.moveTo(...p(256,148)); g.lineTo(...p(256,400));
-  g.strokeStyle='rgba(160,160,165,0.5)'; g.lineWidth=1.5*s;
-  g.setLineDash([6*s,5*s]); g.stroke(); g.setLineDash([]);
-
-  // Belt
-  const bx=175*s,by=318*s,bw=162*s,bh=26*s,br2=7*s;
-  g.beginPath(); g.roundRect(bx,by,bw,bh,br2);
-  const belt=g.createLinearGradient(bx,by,bx,by+bh);
-  belt.addColorStop(0,'#fbbf24'); belt.addColorStop(.5,'#f59e0b'); belt.addColorStop(1,'#d97706');
-  g.fillStyle=belt; g.fill();
-  g.beginPath(); g.roundRect(bx+2*s,by+2*s,bw-4*s,bh/3,br2);
-  g.fillStyle='rgba(255,255,255,0.3)'; g.fill();
-
-  // Belt knot
-  const kx=240*s,ky=312*s,kw=32*s,kh=38*s,kr3=5*s;
-  g.beginPath(); g.roundRect(kx,ky,kw,kh,kr3);
-  const knot=g.createLinearGradient(kx,ky,kx,ky+kh);
-  knot.addColorStop(0,'#fbbf24'); knot.addColorStop(1,'#b45309');
-  g.fillStyle=knot; g.fill();
-  g.strokeStyle='rgba(180,100,0,0.4)'; g.lineWidth=1.5*s; g.stroke();
-
-  // Accent bars
-  g.beginPath(); g.roundRect(72*s,104*s,368*s,5*s,3*s);
-  g.fillStyle='rgba(245,158,11,0.75)'; g.fill();
-  g.beginPath(); g.roundRect(72*s,403*s,368*s,3*s,2*s);
-  g.fillStyle='rgba(245,158,11,0.38)'; g.fill();
-
-  g.restore();
-  return c;
+/* ── Gi icon ── */
+function buildGiIcon(size) {
+  try {
+    var c = document.createElement('canvas'); c.width = c.height = size;
+    var s = size/512, g = c.getContext('2d'), r = 90*s;
+    g.beginPath(); g.moveTo(r,0); g.arcTo(size,0,size,size,r); g.arcTo(size,size,0,size,r); g.arcTo(0,size,0,0,r); g.arcTo(0,0,size,0,r); g.closePath();
+    var bg = g.createLinearGradient(0,0,size,size); bg.addColorStop(0,'#1a2540'); bg.addColorStop(1,'#0d1117');
+    g.fillStyle=bg; g.fill(); g.save(); g.clip();
+    var gw = g.createRadialGradient(size*.5,size*.42,0,size*.5,size*.42,size*.45); gw.addColorStop(0,'rgba(251,191,36,.22)'); gw.addColorStop(1,'rgba(0,0,0,0)');
+    g.fillStyle=gw; g.fillRect(0,0,size,size);
+    function pt(x,y){return [x*s,y*s];}
+    g.beginPath(); g.moveTo.apply(g,pt(256,148)); g.lineTo.apply(g,pt(188,232)); g.lineTo.apply(g,pt(205,440)); g.lineTo.apply(g,pt(256,400)); g.closePath(); g.fillStyle='rgba(255,255,255,.93)'; g.fill(); g.strokeStyle='rgba(0,0,0,.1)'; g.lineWidth=2*s; g.stroke();
+    g.beginPath(); g.moveTo.apply(g,pt(256,148)); g.lineTo.apply(g,pt(324,232)); g.lineTo.apply(g,pt(307,440)); g.lineTo.apply(g,pt(256,400)); g.closePath(); g.fillStyle='rgba(228,228,228,.93)'; g.fill(); g.strokeStyle='rgba(0,0,0,.08)'; g.stroke();
+    g.beginPath(); g.moveTo.apply(g,pt(256,148)); g.lineTo.apply(g,pt(238,198)); g.lineTo.apply(g,pt(256,248)); g.lineTo.apply(g,pt(274,198)); g.closePath(); g.fillStyle='rgba(205,205,210,.95)'; g.fill();
+    g.beginPath(); g.moveTo.apply(g,pt(190,232)); g.lineTo.apply(g,pt(112,188)); g.lineTo.apply(g,pt(96,256)); g.lineTo.apply(g,pt(195,284)); g.closePath(); g.fillStyle='rgba(255,255,255,.88)'; g.fill(); g.strokeStyle='rgba(0,0,0,.07)'; g.stroke();
+    g.beginPath(); g.moveTo.apply(g,pt(322,232)); g.lineTo.apply(g,pt(400,188)); g.lineTo.apply(g,pt(416,256)); g.lineTo.apply(g,pt(317,284)); g.closePath(); g.fillStyle='rgba(228,228,228,.88)'; g.fill(); g.stroke();
+    g.beginPath(); g.moveTo.apply(g,pt(256,148)); g.lineTo.apply(g,pt(256,400)); g.strokeStyle='rgba(160,160,165,.5)'; g.lineWidth=1.5*s; g.setLineDash([6*s,5*s]); g.stroke(); g.setLineDash([]);
+    var bx=175*s,by=318*s,bw=162*s,bh=26*s,br2=7*s;
+    g.beginPath(); g.roundRect(bx,by,bw,bh,br2);
+    var belt=g.createLinearGradient(bx,by,bx,by+bh); belt.addColorStop(0,'#fbbf24'); belt.addColorStop(.5,'#f59e0b'); belt.addColorStop(1,'#d97706');
+    g.fillStyle=belt; g.fill(); g.beginPath(); g.roundRect(bx+2*s,by+2*s,bw-4*s,bh/3,br2); g.fillStyle='rgba(255,255,255,.3)'; g.fill();
+    var kx=240*s,ky=312*s,kw=32*s,kh=38*s,kr3=5*s;
+    g.beginPath(); g.roundRect(kx,ky,kw,kh,kr3);
+    var knot=g.createLinearGradient(kx,ky,kx,ky+kh); knot.addColorStop(0,'#fbbf24'); knot.addColorStop(1,'#b45309');
+    g.fillStyle=knot; g.fill(); g.strokeStyle='rgba(180,100,0,.4)'; g.lineWidth=1.5*s; g.stroke();
+    g.beginPath(); g.roundRect(72*s,104*s,368*s,5*s,3*s); g.fillStyle='rgba(251,191,36,.75)'; g.fill();
+    g.beginPath(); g.roundRect(72*s,403*s,368*s,3*s,2*s); g.fillStyle='rgba(251,191,36,.38)'; g.fill();
+    g.restore(); return c;
+  } catch(e) {
+    var fc=document.createElement('canvas'); fc.width=fc.height=size;
+    var fg=fc.getContext('2d'); fg.fillStyle='#0d1117'; fg.fillRect(0,0,size,size);
+    fg.fillStyle='#f59e0b'; fg.fillRect(size*.1,size*.4,size*.8,size*.15); return fc;
+  }
 }
-
-(function setupPWA(){
-  const canvas512 = buildGiIcon(512);
-  const canvas192 = buildGiIcon(192);
-  const png512 = canvas512.toDataURL('image/png');
-  const png192 = canvas192.toDataURL('image/png');
-  window._iconPNG = { png512, png192, canvas192 };
-
-  // Apple touch icon
-  const apple = document.createElement('link');
-  apple.rel = 'apple-touch-icon';
-  apple.setAttribute('sizes','512x512');
-  apple.href = png512;
-  document.head.appendChild(apple);
-
-  // Favicon
-  const fav = document.createElement('link');
-  fav.rel = 'icon'; fav.type = 'image/png'; fav.href = png192;
-  document.head.appendChild(fav);
-
-  // Manifest
-  const manifest = {
-    name: "ISKA Karate Attendance",
-    short_name: "ISKA Karate",
-    description: "Attendance & payment tracking for ISKA Karate",
-    start_url: ".",
-    display: "standalone",
-    background_color: "#0a0f1e",
-    theme_color: "#0a0f1e",
-    orientation: "any",
-    icons: [
-      { src: png192, sizes: "192x192", type: "image/png", purpose: "any" },
-      { src: png512, sizes: "512x512", type: "image/png", purpose: "any maskable" }
-    ]
-  };
-  const ml = document.createElement('link');
-  ml.rel = 'manifest';
-  ml.href = 'data:application/manifest+json;charset=utf-8,'
-           + encodeURIComponent(JSON.stringify(manifest));
-  document.head.appendChild(ml);
+(function(){
+  try {
+    var c512=buildGiIcon(512),c192=buildGiIcon(192);
+    var p512=c512.toDataURL('image/png'),p192=c192.toDataURL('image/png');
+    window._iconPNG={png512:p512,png192:p192};
+    var al=document.createElement('link'); al.rel='apple-touch-icon'; al.setAttribute('sizes','512x512'); al.href=p512; document.head.appendChild(al);
+    var fl=document.createElement('link'); fl.rel='icon'; fl.type='image/png'; fl.href=p192; document.head.appendChild(fl);
+    var mf={name:'ISKA Karate Attendance',short_name:'ISKA Karate',description:'Attendance and payment tracking',start_url:'.',display:'standalone',background_color:'#0d1117',theme_color:'#0d1117',orientation:'any',icons:[{src:p192,sizes:'192x192',type:'image/png',purpose:'any'},{src:p512,sizes:'512x512',type:'image/png',purpose:'any maskable'}]};
+    var ml=document.createElement('link'); ml.rel='manifest'; ml.href='data:application/manifest+json;charset=utf-8,'+encodeURIComponent(JSON.stringify(mf)); document.head.appendChild(ml);
+  } catch(e){console.warn('PWA:',e);}
 })();
 </script>
 
 <style>
-/* ═══════════════════════════════════════════
-   CSS VARIABLES
-═══════════════════════════════════════════ */
 :root {
-  --navy:      #0a0f1e;
-  --navy2:     #111827;
-  --navy3:     #1a2540;
-  --amber:     #d97706;
-  --amber2:    #fbbf24;
-  --amberglow: rgba(217,119,6,0.13);
-  --green:     #059669;
-  --red:       #dc2626;
-  --blue:      #2563eb;
-  --border:    #e5e7eb;
-  --text:      #111827;
-  --text2:     #374151;
-  --text3:     #6b7280;
-  --page-bg:   #f3f4f6;
-  --card-bg:   #ffffff;
-  --radius:    18px;
-  --radius-sm: 12px;
-  --sidebar-w: 240px;
+  --dk-bg:       #0d1117;
+  --dk-surface:  #161b27;
+  --dk-border:   #252d3d;
+  --dk-border2:  #2e3a50;
+  --dk-text:     #f1f5f9;
+  --dk-text2:    #94a3b8;
+  --dk-text3:    #5a6a82;
+  --pg-bg:       #f1f5f9;
+  --pg-card:     #ffffff;
+  --pg-border:   #e2e8f0;
+  --pg-border2:  #cbd5e1;
+  --pg-text:     #0f172a;
+  --pg-text2:    #334155;
+  --pg-text3:    #64748b;
+  --amber:       #f59e0b;
+  --amber2:      #fbbf24;
+  --amber-d:     #d97706;
+  --amber-glow:  rgba(245,158,11,.13);
+  --green:       #10b981;
+  --red:         #ef4444;
+  --blue:        #3b82f6;
+  --purple:      #8b5cf6;
+  --sidebar-w:   260px;
+  --topbar-h:    64px;
+  --footer-h:    42px;
+  --radius:      14px;
+  --radius-lg:   20px;
+  --ease:        0.18s ease;
 }
 
-/* ═══════════════════════════════════════════
-   RESET + APP FEEL
-═══════════════════════════════════════════ */
-*, *::before, *::after {
-  box-sizing: border-box; margin: 0; padding: 0;
-  -webkit-tap-highlight-color: transparent;
-  -webkit-touch-callout: none;
-}
+*,*::before,*::after { box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-touch-callout:none; }
+html { overscroll-behavior:none; height:100%; }
+body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); font-family:'Inter',system-ui,sans-serif; font-size:15px; overflow:hidden; }
 
-html {
-  overscroll-behavior: none;
-  height: 100%;
-}
+/* ── SPLASH ── */
+#splash { position:fixed; inset:0; background:var(--dk-bg); z-index:99999; display:flex; flex-direction:column; align-items:center; justify-content:center; transition:opacity .5s ease,visibility .5s ease; }
+#splash.hidden { opacity:0; visibility:hidden; pointer-events:none; }
+#splash-canvas { width:120px; height:120px; border-radius:26px; box-shadow:0 0 0 1px rgba(245,158,11,.2),0 0 56px rgba(245,158,11,.3); animation:splashPop .65s cubic-bezier(.34,1.56,.64,1) forwards; }
+#splash-name { font-size:26px; font-weight:800; color:var(--dk-text); margin-top:20px; animation:sfade .5s .3s both; }
+#splash-sub  { font-size:11px; font-weight:700; color:var(--amber); letter-spacing:3px; text-transform:uppercase; margin-top:4px; animation:sfade .5s .45s both; }
+#splash-dots { display:flex; gap:7px; margin-top:32px; animation:sfade .4s .6s both; }
+#splash-dots span { width:7px; height:7px; border-radius:50%; background:var(--dk-border2); animation:dotB 1.2s ease-in-out infinite; }
+#splash-dots span:nth-child(2){animation-delay:.2s} #splash-dots span:nth-child(3){animation-delay:.4s}
+@keyframes splashPop{from{transform:scale(.35);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes sfade{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+@keyframes dotB{0%,100%{background:var(--dk-border2);transform:translateY(0)}50%{background:var(--amber);transform:translateY(-5px)}}
 
-body {
-  width: 100%; height: 100%;
-  background: var(--navy);
-  color: var(--text);
-  font-family: 'Nunito', sans-serif;
-  font-size: 15px;
-  overflow: hidden;
-}
+/* ── SHELL ── */
+.shell { display:flex; width:100vw; height:100vh; overflow:hidden; }
 
-/* ═══════════════════════════════════════════
-   SPLASH SCREEN
-═══════════════════════════════════════════ */
-#splash {
-  position: fixed; inset: 0;
-  background: #0a0f1e;
-  z-index: 99999;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  transition: opacity 0.5s ease, visibility 0.5s ease;
-}
-#splash.hidden { opacity: 0; visibility: hidden; pointer-events: none; }
+/* ── SIDEBAR ── */
+.sidebar { width:var(--sidebar-w); min-width:var(--sidebar-w); background:var(--dk-surface); display:flex; flex-direction:column; border-right:1px solid var(--dk-border); position:relative; overflow:hidden; z-index:10; flex-shrink:0; }
+.sidebar::after { content:''; position:absolute; left:0; top:15%; bottom:15%; width:2px; border-radius:0 2px 2px 0; background:linear-gradient(180deg,transparent,var(--amber),transparent); opacity:.2; }
+.brand { padding:22px 20px 18px; border-bottom:1px solid var(--dk-border); flex-shrink:0; }
+.brand-row { display:flex; align-items:center; gap:13px; }
+.brand-icon { width:44px; height:44px; border-radius:13px; overflow:hidden; flex-shrink:0; box-shadow:0 0 0 1px rgba(245,158,11,.22),0 0 18px rgba(245,158,11,.18); }
+.brand-icon img { width:100%; height:100%; display:block; }
+.brand-name { font-size:16px; font-weight:800; color:var(--dk-text); line-height:1.2; }
+.brand-tag  { font-size:10px; font-weight:600; color:var(--amber); letter-spacing:2.5px; text-transform:uppercase; margin-top:1px; }
+.nav { padding:16px 12px 12px; flex:1; display:flex; flex-direction:column; gap:3px; }
+.nav-lbl { font-size:10px; font-weight:700; letter-spacing:2px; text-transform:uppercase; color:var(--dk-text3); padding:0 12px 10px; }
+.navbtn { width:100%; display:flex; align-items:center; gap:11px; padding:11px 12px; border:1px solid transparent; border-radius:var(--radius); background:transparent; color:var(--dk-text2); font-family:'Inter',sans-serif; font-size:14px; font-weight:600; cursor:pointer; transition:all var(--ease); position:relative; text-align:left; }
+.nb-ico { width:34px; height:34px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center; font-size:17px; background:rgba(255,255,255,.04); transition:background var(--ease); }
+.nb-lbl { flex:1; }
+/* ── ITEM 4: Nav badge for checked-in count ── */
+.nb-badge { min-width:20px; height:20px; padding:0 5px; border-radius:10px; background:var(--green); color:#fff; font-size:11px; font-weight:800; display:none; align-items:center; justify-content:center; flex-shrink:0; }
+.nb-badge.show { display:flex; }
+.navbtn:hover { background:rgba(255,255,255,.05); color:var(--dk-text); }
+.navbtn:hover .nb-ico { background:rgba(255,255,255,.08); }
+.navbtn.active { background:var(--amber-glow); color:var(--amber2); border-color:rgba(245,158,11,.18); }
+.navbtn.active .nb-ico { background:rgba(245,158,11,.14); }
+.navbtn.active::before { content:''; position:absolute; left:0; top:22%; bottom:22%; width:3px; border-radius:0 3px 3px 0; background:var(--amber); }
+.sidebar-footer { padding:14px 20px 18px; border-top:1px solid var(--dk-border); font-size:11px; color:var(--dk-text3); line-height:1.7; flex-shrink:0; }
+.sidebar-footer b { color:var(--dk-text2); font-weight:600; }
 
-#splash-canvas {
-  width: 140px; height: 140px;
-  border-radius: 32px;
-  box-shadow: 0 0 60px rgba(245,158,11,0.4), 0 0 120px rgba(245,158,11,0.15);
-  animation: splashPop 0.6s cubic-bezier(0.34,1.56,0.64,1) forwards;
-}
-#splash-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 32px; font-weight: 700; color: #f1f5f9;
-  margin-top: 24px; letter-spacing: 1px;
-  animation: splashFade 0.5s ease 0.3s both;
-}
-#splash-sub {
-  font-size: 13px; font-weight: 600; color: var(--amber);
-  letter-spacing: 3px; text-transform: uppercase; margin-top: 6px;
-  animation: splashFade 0.5s ease 0.45s both;
-}
-#splash-dots {
-  display: flex; gap: 8px; margin-top: 40px;
-  animation: splashFade 0.4s ease 0.6s both;
-}
-#splash-dots span {
-  width: 8px; height: 8px; border-radius: 50%; background: #374151;
-  animation: dotPulse 1.2s ease-in-out infinite;
-}
-#splash-dots span:nth-child(2){ animation-delay:.2s; }
-#splash-dots span:nth-child(3){ animation-delay:.4s; }
+/* ── MAIN ── */
+.main { flex:1; display:flex; flex-direction:column; overflow:hidden; min-width:0; }
+.topbar { height:var(--topbar-h); min-height:var(--topbar-h); flex-shrink:0; background:var(--dk-surface); border-bottom:1px solid var(--dk-border); display:flex; align-items:center; padding:0 28px; gap:16px; }
+.topbar-title { font-size:19px; font-weight:800; color:var(--dk-text); flex:1; }
+.topbar-right { display:flex; align-items:center; gap:12px; }
+.topbar-date  { font-size:12px; color:var(--dk-text3); }
+.backup-pill { display:flex; align-items:center; gap:6px; background:rgba(255,255,255,.04); border:1px solid var(--dk-border); border-radius:20px; padding:5px 11px; font-size:11px; font-weight:600; color:var(--dk-text3); transition:all .3s; white-space:nowrap; }
+.bp-dot { width:6px; height:6px; border-radius:50%; background:var(--dk-text3); transition:background .3s; flex-shrink:0; }
+.backup-pill.saving { border-color:rgba(245,158,11,.3); color:var(--amber); }
+.backup-pill.saving .bp-dot { background:var(--amber); }
+.backup-pill.saved  { border-color:rgba(16,185,129,.28); color:var(--green); }
+.backup-pill.saved  .bp-dot { background:var(--green); }
+.live-dot { width:8px; height:8px; border-radius:50%; background:var(--green); box-shadow:0 0 7px var(--green); animation:blink 2.5s ease-in-out infinite; }
+@keyframes blink{0%,100%{opacity:1}50%{opacity:.3}}
 
-@keyframes splashPop  { from{transform:scale(.5);opacity:0} to{transform:scale(1);opacity:1} }
-@keyframes splashFade { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
-@keyframes dotPulse   { 0%,100%{background:#374151;transform:scale(1)} 50%{background:#f59e0b;transform:scale(1.4)} }
+.scroll { flex:1; overflow-y:auto; overflow-x:hidden; background:var(--pg-bg); padding:28px 32px; padding-bottom:28px; }
+.scroll::-webkit-scrollbar{width:5px}
+.scroll::-webkit-scrollbar-thumb{background:var(--pg-border2);border-radius:10px}
 
-/* ═══════════════════════════════════════════
-   LAYOUT SHELL
-═══════════════════════════════════════════ */
-.shell {
-  display: flex;
-  width: 100vw;
-  height: 100vh;
-  height: 100dvh;
-  overflow: hidden;
-}
+.app-footer { flex-shrink:0; height:var(--footer-h); background:var(--dk-surface); border-top:1px solid var(--dk-border); display:flex; align-items:center; justify-content:center; gap:8px; padding:0 20px; font-size:12px; white-space:nowrap; overflow:hidden; }
+.fc{color:var(--dk-text3)} .fs{color:var(--dk-border2)} .fa{color:var(--amber);font-weight:700}
 
-/* ═══════════════════════════════════════════
-   SIDEBAR
-═══════════════════════════════════════════ */
-.sidebar {
-  width: var(--sidebar-w);
-  min-width: var(--sidebar-w);
-  background: var(--navy2);
-  display: flex; flex-direction: column;
-  border-right: 1px solid rgba(255,255,255,0.07);
-  position: relative; overflow: hidden; z-index: 10;
-}
-.sidebar::before {
-  content: '';
-  position: absolute; inset: 0; pointer-events: none;
-  background-image:
-    linear-gradient(rgba(245,158,11,0.04) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(245,158,11,0.04) 1px, transparent 1px);
-  background-size: 32px 32px;
-}
+/* ── PAGES ── */
+.page { display:none; }
+.page.active { display:block; }
 
-.brand {
-  padding: 22px 18px 18px;
-  border-bottom: 1px solid rgba(255,255,255,0.07);
+/* ── ITEM 1: Attendance page date header ── */
+.att-header {
+  display: flex; align-items: center; justify-content: space-between;
+  margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
+}
+.att-header h1 { font-size:28px; font-weight:800; color:var(--pg-text); }
+.att-header p  { font-size:14px; color:var(--pg-text3); margin-top:3px; }
+.date-chip {
+  display: flex; align-items: center; gap: 10px;
+  background: var(--dk-surface); border:1px solid var(--dk-border);
+  border-radius: var(--radius-lg); padding: 12px 18px;
   flex-shrink: 0;
 }
-.brand-badge { display: flex; align-items: center; gap: 10px; }
+.date-chip-day  { font-size:11px; font-weight:700; color:var(--amber); letter-spacing:1.5px; text-transform:uppercase; }
+.date-chip-num  { font-size:32px; font-weight:800; color:var(--dk-text); line-height:1; }
+.date-chip-mon  { font-size:12px; font-weight:600; color:var(--dk-text2); margin-top:1px; }
 
-/* Brand icon — will be replaced with canvas by JS */
-.brand-icon {
-  width: 42px; height: 42px;
-  border-radius: 12px;
-  overflow: hidden;
-  flex-shrink: 0;
-  box-shadow: 0 0 18px var(--amberglow);
-}
-.brand-icon canvas,
-.brand-icon img { width: 100%; height: 100%; display: block; }
+.pg-intro { margin-bottom:26px; }
+.pg-intro h1 { font-size:28px; font-weight:800; color:var(--pg-text); }
+.pg-intro p  { font-size:14px; color:var(--pg-text3); margin-top:5px; }
 
-.brand-text {
-  font-family: 'Rajdhani', sans-serif;
-  font-weight: 700; font-size: 17px; line-height: 1.2; color: #f1f5f9;
-}
-.brand-text span {
-  display: block; font-size: 11px; font-weight: 500;
-  color: var(--amber); letter-spacing: 1.5px; text-transform: uppercase;
-}
+/* ── ITEM 3: Check-In card dominates — 2fr vs 1fr ── */
+.att-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
 
-.nav {
-  padding: 18px 12px; flex: 1;
-  display: flex; flex-direction: column; gap: 5px;
+/* ── ITEM 5: Month summary strip on payments page ── */
+.month-summary {
+  display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
 }
-.nav-label {
-  font-size: 10px; font-weight: 700; letter-spacing: 2px;
-  text-transform: uppercase; color: #4b5563;
-  padding: 4px 10px 8px;
-}
-
-.navbtn {
-  width: 100%;
+.ms-chip {
+  flex: 1; min-width: 130px;
+  background: var(--dk-surface); border: 1px solid var(--dk-border);
+  border-radius: var(--radius-lg); padding: 14px 18px;
   display: flex; align-items: center; gap: 12px;
-  padding: 13px 14px;
-  border: 1px solid transparent;
-  border-radius: var(--radius-sm);
-  background: transparent;
-  color: #94a3b8;
-  font-family: 'Nunito', sans-serif;
-  font-size: 14px; font-weight: 600;
-  cursor: pointer; transition: all 0.18s;
-  position: relative; text-align: left;
 }
-.navbtn .icon { font-size: 17px; width: 22px; text-align: center; flex-shrink: 0; }
-.navbtn:hover { background: rgba(255,255,255,0.06); color: #e2e8f0; }
-.navbtn.active {
-  background: var(--amberglow); color: var(--amber);
-  border-color: rgba(217,119,6,0.28);
-}
-.navbtn.active::before {
-  content: '';
-  position: absolute; left: 0; top: 20%; bottom: 20%;
-  width: 3px; border-radius: 4px; background: var(--amber);
-}
+.ms-icon { font-size: 22px; flex-shrink: 0; }
+.ms-val  { font-size: 22px; font-weight: 800; color: var(--dk-text); line-height: 1; }
+.ms-lbl  { font-size: 11px; font-weight: 600; color: var(--dk-text2); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
 
-.sidebar-footer {
-  padding: 14px 18px;
-  border-top: 1px solid rgba(255,255,255,0.07);
-  font-size: 11px; color: #4b5563; line-height: 1.5;
-  flex-shrink: 0;
-}
+/* ── CARD ── */
+.card { background:var(--pg-card); border:1px solid var(--pg-border); border-radius:var(--radius-lg); padding:26px; margin-bottom:22px; box-shadow:0 1px 3px rgba(15,23,42,.05),0 6px 24px rgba(15,23,42,.04); position:relative; transition:box-shadow var(--ease); }
+/* ITEM 3: Check-In card gets amber accent top bar */
+#cardCheckIn { border-top: 3px solid var(--amber); }
+#cardCheckOut { border-top: 3px solid var(--red); }
+.card:focus-within { box-shadow:0 1px 3px rgba(15,23,42,.05),0 6px 24px rgba(15,23,42,.07),0 0 0 3px rgba(245,158,11,.1); }
+.card-hd { display:flex; align-items:center; gap:12px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--pg-border); }
+.card-hd-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
+.chi-amber{background:rgba(245,158,11,.1)} .chi-red{background:rgba(239,68,68,.1)} .chi-green{background:rgba(16,185,129,.1)} .chi-blue{background:rgba(59,130,246,.1)} .chi-purple{background:rgba(139,92,246,.1)}
+.card-hd-title { font-size:17px; font-weight:700; color:var(--pg-text); flex:1; }
 
-/* ═══════════════════════════════════════════
-   MAIN COLUMN
-═══════════════════════════════════════════ */
-.main { flex: 1; display: flex; flex-direction: column; overflow: hidden; min-width: 0; }
+/* ITEM 3: Check-In card header text is bigger */
+#cardCheckIn .card-hd-title { font-size:20px; }
 
-/* ── TOPBAR ── */
-.topbar {
-  height: 62px; min-height: 62px;
-  background: var(--navy2);
-  border-bottom: 1px solid rgba(255,255,255,0.07);
-  display: flex; align-items: center;
-  padding: 0 26px; gap: 14px; flex-shrink: 0;
-}
-.topbar-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 22px; font-weight: 700; color: #f1f5f9; flex: 1;
-}
-.topbar-date { font-size: 13px; color: #64748b; font-weight: 500; }
-.status-dot {
-  width: 8px; height: 8px; border-radius: 50%;
-  background: var(--green);
-  box-shadow: 0 0 8px var(--green);
-  animation: blink 2s infinite;
-}
-@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.35} }
+.pill { display:inline-flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; padding:4px 11px; border-radius:20px; }
+.pill-green  { background:rgba(16,185,129,.1); color:#059669; border:1px solid rgba(16,185,129,.22); }
+.pill-red    { background:rgba(239,68,68,.1);  color:#dc2626; border:1px solid rgba(239,68,68,.22);  }
+.pill-blue   { background:rgba(59,130,246,.1); color:#2563eb; border:1px solid rgba(59,130,246,.22); }
+.pill-purple { background:rgba(139,92,246,.1); color:#7c3aed; border:1px solid rgba(139,92,246,.22); }
 
-/* ── SCROLL AREA ── */
-.scroll {
-  flex: 1; overflow-y: auto;
-  padding: 22px 26px;
-  background: var(--page-bg);
-  scroll-behavior: smooth;
-}
-.scroll::-webkit-scrollbar { width: 5px; }
-.scroll::-webkit-scrollbar-track { background: transparent; }
-.scroll::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 10px; }
+/* ── FORM ── */
+.field { margin-bottom:16px; position:relative; }
+.field-lbl { display:flex; align-items:center; gap:5px; font-size:11px; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:var(--pg-text3); margin-bottom:7px; }
+.field input, .field select { width:100%; padding:13px 16px; border-radius:var(--radius); border:1.5px solid var(--pg-border); background:#f8fafc; color:var(--pg-text); font-family:'Inter',sans-serif; font-size:15px; font-weight:500; transition:border-color var(--ease),box-shadow var(--ease); -webkit-appearance:none; }
+.field input:focus, .field select:focus { outline:none; border-color:var(--amber); box-shadow:0 0 0 3px rgba(245,158,11,.12); background:#fff; }
+.field input::placeholder { color:#a8b4c4; }
 
-/* ── FOOTER ── */
-.app-footer {
-  flex-shrink: 0; height: 38px;
-  background: var(--navy2);
-  border-top: 1px solid rgba(255,255,255,0.07);
-  display: flex; align-items: center; justify-content: center;
-  gap: 10px; padding: 0 20px;
-  font-size: 12px; font-weight: 500;
-  white-space: nowrap; overflow: hidden;
-}
-.footer-copy { color: #6b7280; }
-.footer-divider { color: #374151; }
-.footer-author {
-  color: var(--amber); font-weight: 700;
-  font-family: 'Rajdhani', sans-serif; font-size: 13px; letter-spacing: .5px;
-}
+/* ITEM 2: Validation colours on blur */
+.field input.valid, .field select.valid { border-color:#10b981; background:#f0fdf4; }
+.field input.invalid, .field select.invalid { border-color:var(--red); background:#fff5f5; box-shadow:0 0 0 3px rgba(239,68,68,.08); }
 
-/* ═══════════════════════════════════════════
-   PAGES
-═══════════════════════════════════════════ */
-.page { display: none; }
-.page.active { display: block; }
+/* ITEM 7: Signature field — lock cursor + readonly visual ── */
+.sig-field input { font-family:'Dancing Script',cursive; font-size:22px; color:#7c3aed; background:#faf5ff; border-color:#ddd6fe; cursor:default; }
+.sig-field input:focus { border-color:#ddd6fe; box-shadow:none; background:#faf5ff; } /* no focus ring — not editable */
+.sig-field-hint { display:flex; align-items:center; gap:5px; margin-top:5px; font-size:11px; color:var(--pg-text3); }
+.sig-field-hint .lock-icon { font-size:12px; }
 
-.grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+.prefix-wrap { position:relative; }
+.prefix-sym { position:absolute; left:14px; top:50%; transform:translateY(-50%); font-size:15px; font-weight:700; color:var(--pg-text3); pointer-events:none; }
+.prefix-wrap input { padding-left:30px; }
+.sel-wrap { position:relative; }
+.sel-wrap::after { content:'▾'; position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--pg-text3); font-size:13px; pointer-events:none; }
 
-/* ═══════════════════════════════════════════
-   CARDS
-═══════════════════════════════════════════ */
-.card {
-  background: var(--card-bg);
-  border: 1px solid var(--border);
-  border-radius: 22px;
-  padding: 24px; margin-bottom: 20px;
-  position: relative; overflow: visible;
-  box-shadow: 0 2px 14px rgba(0,0,0,0.06);
-}
-.card::before {
-  content: '';
-  position: absolute; top: 0; left: 0; right: 0;
-  height: 2px; border-radius: 22px 22px 0 0;
-  background: linear-gradient(90deg, transparent, var(--amber), transparent);
-  opacity: 0.55;
-}
-.card-title {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 20px; font-weight: 700; color: var(--navy);
-  margin-bottom: 18px; display: flex; align-items: center; gap: 10px;
-}
-
-/* ─ Badges ─ */
-.badge {
-  font-size: 10px; font-weight: 700; letter-spacing: 1px;
-  text-transform: uppercase; padding: 3px 10px; border-radius: 20px;
-}
-.badge-in   { background:rgba(5,150,105,.12); color:var(--green); border:1px solid rgba(5,150,105,.28); }
-.badge-out  { background:rgba(220,38,38,.1);  color:var(--red);   border:1px solid rgba(220,38,38,.25); }
-.badge-pay  { background:rgba(37,99,235,.1);  color:var(--blue);  border:1px solid rgba(37,99,235,.25); }
-
-/* ═══════════════════════════════════════════
-   FORM FIELDS
-═══════════════════════════════════════════ */
-.field { margin-bottom: 14px; position: relative; }
-
-.field label {
-  display: block; font-size: 11px; font-weight: 700;
-  letter-spacing: 1.2px; text-transform: uppercase;
-  color: var(--text3); margin-bottom: 7px;
-}
-
-.field input,
-.field select {
-  width: 100%; padding: 13px 16px;
-  border-radius: var(--radius-sm);
-  border: 1.5px solid var(--border);
-  background: #f9fafb; color: var(--text);
-  font-family: 'Nunito', sans-serif;
-  font-size: 15px; font-weight: 500;
-  transition: border-color .18s, box-shadow .18s;
-  -webkit-appearance: none;
-}
-.field input:focus,
-.field select:focus {
-  outline: none;
-  border-color: var(--amber);
-  box-shadow: 0 0 0 3px var(--amberglow);
-  background: #fff;
-}
-.field input::placeholder { color: #9ca3af; }
-
-/* Signature field — Dancing Script now loaded */
-.field.sig input {
-  font-family: 'Dancing Script', cursive;
-  font-size: 21px; color: #7c3aed;
-  background: #faf5ff; border-color: #ddd6fe;
-  letter-spacing: .5px;
-}
-.field.sig input:focus { border-color: #7c3aed; box-shadow: 0 0 0 3px rgba(124,58,237,.1); }
+.field-err { display:none; margin-top:7px; padding:7px 11px; background:rgba(239,68,68,.07); border:1px solid rgba(239,68,68,.18); border-radius:9px; font-size:12px; font-weight:600; color:#dc2626; }
+.info-box { background:#f8fafc; border:1px solid var(--pg-border); border-radius:var(--radius); padding:13px 16px; font-size:13px; color:var(--pg-text3); line-height:1.65; margin-top:6px; }
 
 /* ── SUGGESTIONS ── */
-.suggestions {
-  position: absolute; left: 0; right: 0;
-  top: calc(100% + 4px);
-  background: #fff;
-  border: 1.5px solid var(--amber);
-  border-radius: var(--radius-sm);
-  overflow: hidden; max-height: 210px; overflow-y: auto;
-  z-index: 1000;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.13);
-  display: none;
-}
-.suggestions.open { display: block; }
-.suggestions::-webkit-scrollbar { width: 4px; }
-.suggestions::-webkit-scrollbar-thumb { background: var(--amber); border-radius: 4px; }
-
-.sug-item {
-  padding: 12px 16px; cursor: pointer;
-  font-size: 14px; color: var(--text2);
-  border-bottom: 1px solid #f3f4f6;
-  display: flex; align-items: center; gap: 10px;
-  transition: background .12s;
-}
-.sug-item:last-child { border-bottom: none; }
-.sug-item:hover { background: #fffbeb; color: var(--navy); }
-.sug-item::before { content: '›'; color: var(--amber); font-weight: 700; }
-.sug-item mark { background: none; color: var(--amber); font-weight: 800; }
-
-/* ── ERRORS ── */
-.err {
-  color: var(--red); font-size: 12px; font-weight: 600;
-  margin-top: 5px; display: none; padding-left: 2px;
-}
+.suggestions { position:absolute; left:0; right:0; top:calc(100% + 5px); background:#fff; border:1.5px solid var(--amber); border-radius:var(--radius); overflow:hidden; max-height:220px; overflow-y:auto; z-index:1000; box-shadow:0 10px 36px rgba(15,23,42,.14); display:none; }
+.suggestions.open { display:block; }
+.suggestions.up   { top:auto; bottom:calc(100% + 5px); }
+.suggestions::-webkit-scrollbar{width:4px}
+.suggestions::-webkit-scrollbar-thumb{background:var(--amber);border-radius:4px}
+.sug-item { padding:12px 16px; cursor:pointer; font-size:14px; color:var(--pg-text2); border-bottom:1px solid #f1f5f9; display:flex; align-items:center; gap:10px; }
+.sug-item:last-child{border-bottom:none}
+.sug-item:hover{background:#fffbeb;color:var(--pg-text)}
+.sug-arrow{color:var(--amber);font-weight:700;font-size:15px}
+.sug-item mark{background:none;color:var(--amber);font-weight:800}
 
 /* ── BUTTONS ── */
-.btn {
-  width: 100%; padding: 15px 20px;
-  border: none; border-radius: var(--radius-sm);
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 16px; font-weight: 700; letter-spacing: .8px;
-  cursor: pointer; transition: all .18s;
-  display: flex; align-items: center; justify-content: center; gap: 8px;
-  margin-top: 8px;
-}
-.btn:active { transform: scale(0.98); }
+.btn { width:100%; padding:14px 20px; border:none; border-radius:var(--radius); font-family:'Inter',sans-serif; font-size:15px; font-weight:700; cursor:pointer; transition:all var(--ease); display:flex; align-items:center; justify-content:center; gap:8px; position:relative; overflow:hidden; }
+.btn:active { transform:scale(.98); }
+/* Disabled loading state */
+.btn:disabled { opacity:.6; cursor:not-allowed; transform:none; }
+.btn-primary { background:linear-gradient(135deg,#f59e0b,#d97706); color:#1c0a00; box-shadow:0 3px 12px rgba(245,158,11,.28); }
+.btn-primary:hover:not(:disabled) { box-shadow:0 5px 20px rgba(245,158,11,.42); transform:translateY(-1px); }
+.btn-danger  { background:linear-gradient(135deg,#ef4444,#b91c1c); color:#fff; box-shadow:0 3px 12px rgba(239,68,68,.24); }
+.btn-danger:hover:not(:disabled)  { box-shadow:0 5px 20px rgba(239,68,68,.38); transform:translateY(-1px); }
+.btn-export  { background:linear-gradient(135deg,#10b981,#059669); color:#fff; box-shadow:0 3px 12px rgba(16,185,129,.24); }
+.btn-export:hover  { box-shadow:0 5px 20px rgba(16,185,129,.38); transform:translateY(-1px); }
+.btn-blue    { background:linear-gradient(135deg,#3b82f6,#1d4ed8); color:#fff; box-shadow:0 3px 12px rgba(59,130,246,.24); }
+.btn-blue:hover    { box-shadow:0 5px 20px rgba(59,130,246,.38); transform:translateY(-1px); }
+.btn-ghost   { background:transparent; color:var(--pg-text2); border:1.5px solid var(--pg-border); box-shadow:none; }
+.btn-ghost:hover   { background:var(--pg-bg); border-color:var(--pg-border2); }
 
-.btn-primary {
-  background: linear-gradient(135deg, #f59e0b, #d97706);
-  color: #0a0f1e;
-  box-shadow: 0 4px 18px rgba(245,158,11,.28);
-}
-.btn-primary:hover { box-shadow: 0 6px 24px rgba(245,158,11,.42); transform: translateY(-1px); }
+/* ITEM 8: Clear form button */
+.btn-clear { background:transparent; color:var(--pg-text3); border:1.5px solid var(--pg-border); box-shadow:none; font-size:13px; padding:10px 16px; }
+.btn-clear:hover { background:#fff5f5; border-color:#fca5a5; color:var(--red); }
 
-.btn-danger {
-  background: linear-gradient(135deg, #ef4444, #b91c1c);
-  color: white; box-shadow: 0 4px 18px rgba(239,68,68,.22);
-}
-.btn-danger:hover { transform: translateY(-1px); box-shadow: 0 6px 24px rgba(239,68,68,.35); }
+.action-strip { display:flex; gap:12px; position:sticky; bottom:20px; z-index:50; margin-top:8px; }
+.action-strip .btn { flex:1; margin-top:0; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.14); }
 
-.btn-export {
-  background: linear-gradient(135deg, #10b981, #059669);
-  color: white; box-shadow: 0 4px 18px rgba(16,185,129,.22);
-}
-.btn-export:hover { transform: translateY(-1px); }
+.pay-save-wrap { position:sticky; bottom:20px; z-index:50; margin-top:10px; filter:drop-shadow(0 6px 18px rgba(0,0,0,.14)); }
 
-/* ═══════════════════════════════════════════
-   TABLES
-═══════════════════════════════════════════ */
-.table-wrap {
-  overflow-x: auto; border-radius: 14px;
-  border: 1px solid var(--border); margin-bottom: 16px;
-}
-.table-wrap::-webkit-scrollbar { height: 5px; }
-.table-wrap::-webkit-scrollbar-thumb { background: #d1d5db; border-radius: 5px; }
+/* ── TABLES ── */
+.table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--pg-border); margin-bottom:18px; background:#fff; }
+.table-wrap::-webkit-scrollbar{height:5px}
+.table-wrap::-webkit-scrollbar-thumb{background:var(--pg-border2);border-radius:5px}
+table { width:100%; min-width:860px; border-collapse:collapse; }
+thead tr { background:#f8fafc; }
+thead th { padding:13px 16px; font-size:11px; font-weight:700; letter-spacing:.9px; text-transform:uppercase; color:var(--pg-text3); text-align:left; white-space:nowrap; border-bottom:2px solid var(--pg-border); }
+tbody td { padding:13px 16px; font-size:13px; color:var(--pg-text2); border-bottom:1px solid #f1f5f9; white-space:nowrap; background:#fff; }
+tbody tr:last-child td{border-bottom:none}
+tbody tr:hover td{background:#fafbfd}
+tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
+.td-name{font-weight:700;color:var(--pg-text)}
+.td-sig{font-family:'Dancing Script',cursive;font-size:18px;color:#7c3aed}
+.td-amt{font-weight:700;color:var(--pg-text)}
+.tg{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:20px;font-size:11px;font-weight:700}
+.tg::before{content:'';width:5px;height:5px;border-radius:50%;flex-shrink:0}
+.tg-in    {background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)} .tg-in::before    {background:#059669}
+.tg-out   {background:rgba(100,116,139,.1);color:#475569;border:1px solid rgba(100,116,139,.2)} .tg-out::before   {background:#475569}
+.tg-paid  {background:rgba(16,185,129,.1);color:#059669;border:1px solid rgba(16,185,129,.2)} .tg-paid::before  {background:#059669}
+.tg-unpaid{background:rgba(239,68,68,.1);color:#dc2626;border:1px solid rgba(239,68,68,.2)}   .tg-unpaid::before{background:#dc2626}
+.empty-row td { text-align:center; padding:36px; color:var(--pg-text3); font-size:14px; font-style:italic; border-bottom:none; }
 
-table { width: 100%; min-width: 860px; border-collapse: collapse; }
+/* ── STAT CHIPS ── */
+.stat-row{display:flex;gap:10px;margin-bottom:20px;flex-wrap:wrap}
+.stat-chip{flex:1;min-width:110px;background:var(--pg-bg);border:1px solid var(--pg-border);border-radius:var(--radius);padding:14px 16px;animation:chipIn .25s ease both}
+@keyframes chipIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+.sc-val{font-size:24px;font-weight:800;color:var(--pg-text);line-height:1}
+.sc-lbl{font-size:11px;font-weight:600;color:var(--pg-text3);text-transform:uppercase;letter-spacing:.8px;margin-top:3px}
 
-thead th {
-  background: #f9fafb;
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 11px; font-weight: 700; letter-spacing: 1.5px;
-  text-transform: uppercase; color: var(--navy);
-  padding: 12px 14px; text-align: left;
-  white-space: nowrap; border-bottom: 1px solid var(--border);
-}
-tbody td {
-  padding: 12px 14px; font-size: 13px; color: var(--text2);
-  border-bottom: 1px solid #f3f4f6;
-  white-space: nowrap; background: #fff;
-}
-tbody tr:last-child td { border-bottom: none; }
-tbody tr:hover td { background: #fafafa; color: var(--text); }
+/* ── REPORT CONTROLS ── */
+.report-ctrl{display:flex;align-items:center;gap:12px;margin-bottom:18px;flex-wrap:wrap}
+.report-ctrl input{padding:10px 14px;border-radius:var(--radius);border:1.5px solid var(--pg-border);background:#f8fafc;color:var(--pg-text);font-family:'Inter',sans-serif;font-size:14px;-webkit-appearance:none}
+.report-ctrl input:focus{outline:none;border-color:var(--amber);background:#fff}
 
-.td-sig { font-family: 'Dancing Script', cursive; font-size: 17px; color: #7c3aed; }
+/* ── BACKUP ── */
+.bk-history{margin-top:18px;border-top:1px solid var(--pg-border);padding-top:16px}
+.bk-history-lbl{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--pg-text3);margin-bottom:12px}
+.bk-row{display:flex;align-items:center;gap:12px;padding:12px 14px;border-radius:var(--radius);background:var(--pg-bg);border:1px solid var(--pg-border);margin-bottom:8px}
+.bk-row:last-child{margin-bottom:0}
+.bk-ico{font-size:20px;flex-shrink:0}
+.bk-info{flex:1;min-width:0}
+.bk-date{font-size:13px;font-weight:700;color:var(--pg-text);display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.bk-latest{font-size:10px;font-weight:700;letter-spacing:.8px;text-transform:uppercase;color:var(--green);background:rgba(16,185,129,.1);border:1px solid rgba(16,185,129,.2);padding:1px 7px;border-radius:10px}
+.bk-size{font-size:11px;color:var(--pg-text3);margin-top:2px}
+.bk-btn{padding:7px 14px;font-size:12px;font-weight:700;border:none;border-radius:9px;cursor:pointer;background:var(--blue);color:#fff;font-family:'Inter',sans-serif;flex-shrink:0}
 
-/* Inline table badges */
-.tg {
-  display: inline-block; padding: 2px 9px;
-  border-radius: 20px; font-size: 11px; font-weight: 700;
-}
-.tg-in     { background:rgba(5,150,105,.12);  color:var(--green); border:1px solid rgba(5,150,105,.28); }
-.tg-out    { background:rgba(100,116,139,.1); color:#64748b;      border:1px solid rgba(100,116,139,.28); }
-.tg-paid   { background:rgba(5,150,105,.12);  color:var(--green); border:1px solid rgba(5,150,105,.28); }
-.tg-unpaid { background:rgba(220,38,38,.1);   color:var(--red);   border:1px solid rgba(220,38,38,.25); }
+/* ── LEGAL — neutral grey ── */
+.legal { background:#f8fafc; border:1px solid var(--pg-border); border-radius:var(--radius-lg); padding:16px 18px; margin-bottom:22px; max-height:130px; overflow-y:auto; font-size:12px; color:var(--pg-text3); line-height:1.8; }
+.legal strong{display:block;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:var(--pg-text2);margin-bottom:8px;font-weight:700}
+.legal::-webkit-scrollbar{width:4px}
+.legal::-webkit-scrollbar-thumb{background:var(--pg-border2);border-radius:4px}
 
-/* Empty state */
-.empty-row td {
-  text-align: center; padding: 28px; color: var(--text3);
-  font-size: 13px; font-style: italic;
-}
+/* ── SUCCESS ── */
+.success-overlay { position:fixed; inset:0; z-index:9999; background:rgba(0,0,0,.6); display:flex; align-items:center; justify-content:center; opacity:0; pointer-events:none; transition:opacity .22s; }
+.success-overlay.show{opacity:1;pointer-events:auto}
+.success-card { background:#1c2333; border:1px solid var(--dk-border2); border-radius:28px; padding:40px 38px; text-align:center; transform:scale(.65); transition:transform .32s cubic-bezier(.34,1.56,.64,1); min-width:268px; box-shadow:0 28px 80px rgba(0,0,0,.45); }
+.success-overlay.show .success-card{transform:scale(1)}
+.check-svg{display:block;margin:0 auto 20px;width:88px;height:88px}
+.check-circle{fill:none;stroke:var(--green);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251}
+.check-tick  {fill:none;stroke:var(--green);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:52;stroke-dashoffset:52}
+.success-overlay.show .check-circle{animation:drawC .55s ease-out forwards}
+.success-overlay.show .check-tick  {animation:drawT .35s ease-out .5s forwards}
+@keyframes drawC{to{stroke-dashoffset:0}} @keyframes drawT{to{stroke-dashoffset:0}}
+.success-msg{font-size:18px;font-weight:800;color:var(--dk-text);opacity:0;transform:translateY(8px);transition:opacity .3s ease .75s,transform .3s ease .75s}
+.success-overlay.show .success-msg{opacity:1;transform:translateY(0)}
 
-/* ═══════════════════════════════════════════
-   REPORT CONTROLS
-═══════════════════════════════════════════ */
-.report-controls { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-.report-controls input {
-  padding: 10px 14px; border-radius: var(--radius-sm);
-  border: 1.5px solid var(--border); background: #f9fafb;
-  color: var(--text); font-family: 'Nunito', sans-serif;
-  font-size: 14px; -webkit-appearance: none;
-  transition: border-color .18s;
-}
-.report-controls input:focus { outline: none; border-color: var(--amber); background: #fff; }
+/* ── TOAST ── */
+#toast{position:fixed;bottom:60px;left:50%;transform:translateX(-50%) translateY(14px);background:#1e293b;color:#f1f5f9;padding:11px 22px;border-radius:30px;font-size:13px;font-weight:600;box-shadow:0 4px 22px rgba(0,0,0,.25);opacity:0;pointer-events:none;transition:opacity .22s,transform .22s;z-index:9998;white-space:nowrap;border:1px solid rgba(255,255,255,.07);max-width:90vw}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+#toast.warn{background:#7f1d1d;color:#fca5a5;border-color:rgba(239,68,68,.3)}
 
-/* ═══════════════════════════════════════════
-   LEGAL NOTICE
-═══════════════════════════════════════════ */
-.legal-card {
-  background: #fffbeb; border: 1px solid #fde68a;
-  border-radius: var(--radius); padding: 16px 18px;
-  margin-bottom: 20px; max-height: 150px; overflow-y: auto;
-  font-size: 12px; color: #78716c; line-height: 1.7;
-}
-.legal-card strong {
-  display: block; font-size: 10px; letter-spacing: 2px;
-  text-transform: uppercase; color: #92400e; margin-bottom: 8px;
-}
-.legal-card::-webkit-scrollbar { width: 4px; }
-.legal-card::-webkit-scrollbar-thumb { background: #fbbf24; border-radius: 4px; }
+/* ── ITEM 6: Keyboard dimming — only cards within .scroll ── */
+.scroll.kb-active .card:not(.kb-focus) { opacity:.5; transform:scale(.985); transition:opacity .2s,transform .2s; }
+.scroll.kb-active .card.kb-focus { transition:opacity .2s,transform .2s; }
 
-/* ═══════════════════════════════════════════
-   SUCCESS OVERLAY
-═══════════════════════════════════════════ */
-.success-overlay {
-  position: fixed; inset: 0;
-  background: rgba(0,0,0,.55); backdrop-filter: blur(4px);
-  display: flex; align-items: center; justify-content: center;
-  z-index: 9999; opacity: 0; pointer-events: none;
-  transition: opacity .25s;
-}
-.success-overlay.show { opacity: 1; pointer-events: auto; }
+/* ── Scroll-target ping ── */
+.card.scroll-target { animation:cardPing .55s ease forwards; }
+@keyframes cardPing{0%{box-shadow:0 0 0 0 rgba(245,158,11,.5),0 1px 3px rgba(15,23,42,.05)}50%{box-shadow:0 0 0 8px rgba(245,158,11,.12),0 1px 3px rgba(15,23,42,.05)}100%{box-shadow:0 0 0 3px rgba(245,158,11,.1),0 1px 3px rgba(15,23,42,.05)}}
 
-.success-card {
-  background: #111827; border: 1px solid rgba(255,255,255,.1);
-  border-radius: 28px; padding: 36px 32px; text-align: center;
-  transform: scale(.7);
-  transition: transform .3s cubic-bezier(0.34,1.56,0.64,1);
-  min-width: 240px;
-}
-.success-overlay.show .success-card { transform: scale(1); }
-
-.check-svg { display: block; margin: 0 auto 18px; width: 90px; height: 90px; }
-
-.check-circle {
-  fill: none; stroke: #10b981; stroke-width: 4; stroke-linecap: round;
-  stroke-dasharray: 251; stroke-dashoffset: 251;
-}
-.check-tick {
-  fill: none; stroke: #10b981; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round;
-  stroke-dasharray: 52; stroke-dashoffset: 52;
-}
-.success-overlay.show .check-circle { animation: drawCircle .55s ease-out forwards; }
-.success-overlay.show .check-tick   { animation: drawTick .35s ease-out .5s forwards; }
-@keyframes drawCircle { to { stroke-dashoffset: 0; } }
-@keyframes drawTick   { to { stroke-dashoffset: 0; } }
-
-.success-msg {
-  font-family: 'Rajdhani', sans-serif;
-  font-size: 20px; font-weight: 700; color: #f1f5f9;
-  opacity: 0; transform: translateY(6px);
-  transition: opacity .3s ease .75s, transform .3s ease .75s;
-}
-.success-overlay.show .success-msg { opacity: 1; transform: translateY(0); }
-
-/* ═══════════════════════════════════════════
-   TOAST — lightweight inline feedback
-═══════════════════════════════════════════ */
-#toast {
-  position: fixed; bottom: 60px; left: 50%; transform: translateX(-50%) translateY(20px);
-  background: #1f2937; color: #f9fafb;
-  padding: 10px 20px; border-radius: 30px;
-  font-size: 13px; font-weight: 600;
-  box-shadow: 0 4px 20px rgba(0,0,0,.3);
-  opacity: 0; pointer-events: none;
-  transition: opacity .25s, transform .25s;
-  z-index: 9998; white-space: nowrap;
-}
-#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-#toast.warn { background: #7c2d12; color: #fed7aa; }
-
-/* ═══════════════════════════════════════════
-   GALAXY TAB A9+ / A11+ — touch coarse 820–1400px
-═══════════════════════════════════════════ */
-@media (min-width: 820px) and (max-width: 1400px) and (pointer: coarse) {
-  :root { --sidebar-w: 220px; }
-  html, body { font-size: 16px; }
-  .scroll { padding: 22px 24px; }
-  .card { padding: 28px; }
-  .field input, .field select { padding: 15px 18px; font-size: 16px; }
-  .btn { padding: 17px 20px; font-size: 17px; }
-  .sug-item { padding: 14px 18px; font-size: 15px; }
-  thead th { font-size: 12px; padding: 13px 15px; }
-  tbody td  { font-size: 14px; padding: 13px 15px; }
-  .topbar { height: 68px; }
-  .topbar-title { font-size: 24px; }
-  .navbtn { padding: 15px 16px; font-size: 15px; }
-  .app-footer { height: 42px; font-size: 13px; }
-  .footer-author { font-size: 14px; }
+/* ── GALAXY TAB A9+/A11+ ── */
+@media (min-width:820px) and (max-width:1400px) and (pointer:coarse) {
+  :root{--sidebar-w:236px;--topbar-h:68px}
+  html,body{font-size:16px}
+  .scroll{padding:24px 28px}
+  .card{padding:28px}
+  .field input,.field select{padding:15px 18px;font-size:16px}
+  .btn{padding:17px 20px;font-size:16px}
+  .sug-item{padding:14px 18px;font-size:15px;min-height:52px}
+  thead th{padding:14px 16px}
+  tbody td{font-size:14px;padding:14px 16px}
+  .action-strip .btn{padding:18px;font-size:16px}
+  .sc-val{font-size:26px}
+  .date-chip-num{font-size:38px}
+  .ms-val{font-size:26px}
 }
 
-/* ═══════════════════════════════════════════
-   TABLET GENERAL — 1024px breakpoint
-═══════════════════════════════════════════ */
-@media (max-width: 1024px) {
-  :root { --sidebar-w: 200px; }
-  .topbar { padding: 0 18px; }
-  .scroll { padding: 18px 20px; }
-  .grid-2 { grid-template-columns: 1fr; }
+/* ── TABLET 1024px ── */
+@media (max-width:1024px) {
+  :root{--sidebar-w:216px}
+  .scroll{padding:20px 22px}
+  .att-grid{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
 }
 
-/* ═══════════════════════════════════════════
-   MOBILE — 820px breakpoint
-   Nav fills full width, no overflow
-═══════════════════════════════════════════ */
-@media (max-width: 820px) {
-  .shell { flex-direction: column; }
+/* ── MOBILE 820px ── */
+@media (max-width:820px) {
+  .shell{flex-direction:column}
+  .sidebar{width:100%;min-width:0;flex-direction:row;align-items:stretch;height:auto;border-right:none;border-bottom:1px solid var(--dk-border);padding:0;overflow:hidden;flex-shrink:0}
+  .sidebar::after{display:none}
+  .brand{padding:8px 12px;border-bottom:none;border-right:1px solid var(--dk-border);flex-shrink:0;display:flex;align-items:center}
+  .brand-name,.brand-tag{display:none}
+  .brand-icon{width:36px;height:36px;border-radius:9px}
+  .nav{flex-direction:row;padding:6px 8px;gap:5px;flex:1}
+  .nav-lbl{display:none}
+  .navbtn{flex:1;min-width:0;padding:10px 6px;justify-content:center;font-size:12px;gap:4px}
+  .navbtn.active::before{display:none}
+  .nb-ico{width:28px;height:28px;font-size:15px}
+  .nb-lbl{display:none}
+  .sidebar-footer,.topbar{display:none}
+  .scroll{padding:14px 14px 70px}
+  .att-grid{grid-template-columns:1fr}
+  .grid-2{grid-template-columns:1fr}
+  .app-footer{font-size:11px;gap:6px}
+  .pg-intro h1,.att-header h1{font-size:22px}
+  .date-chip{padding:10px 14px}
+  .date-chip-num{font-size:26px}
+  .month-summary{gap:8px}
+}
 
-  .sidebar {
-    width: 100%; min-width: 0;
-    flex-direction: row; align-items: stretch;
-    height: auto;
-    border-right: none;
-    border-bottom: 1px solid rgba(255,255,255,.09);
-    padding: 0; overflow: hidden; flex-shrink: 0;
-  }
-  .sidebar::before { background-size: 24px 24px; }
-
-  .brand {
-    border-bottom: none; padding: 8px 12px;
-    border-right: 1px solid rgba(255,255,255,.1);
-    flex-shrink: 0; display: flex; align-items: center;
-  }
-  .brand-text { display: none; }
-  .brand-icon { width: 34px; height: 34px; border-radius: 9px; }
-
-  .nav {
-    flex-direction: row; padding: 6px 8px;
-    gap: 5px; flex: 1; min-width: 0;
-  }
-  .nav-label { display: none; }
-
-  .navbtn {
-    flex: 1; min-width: 0;
-    padding: 10px 6px; justify-content: center;
-    font-size: 13px; gap: 4px;
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-  }
-  .navbtn.active::before { display: none; }
-  .navbtn .icon { width: auto; flex-shrink: 0; }
-
-  .sidebar-footer { display: none; }
-  .topbar { display: none; }
-  .scroll { padding: 14px; }
-  .grid-2 { grid-template-columns: 1fr; }
-  .app-footer { font-size: 11px; gap: 6px; }
+@media (pointer:coarse) {
+  #cardCheckIn .field input,#cardCheckIn .field select,
+  #cardCheckOut .field input,
+  #payments .field input,#payments .field select { font-size:16px; }
 }
 </style>
 </head>
@@ -763,13 +441,13 @@ tbody tr:hover td { background: #fafafa; color: var(--text); }
 
 <!-- SPLASH -->
 <div id="splash">
-  <canvas id="splash-canvas" width="280" height="280"></canvas>
-  <div id="splash-title">ISKA Karate</div>
+  <canvas id="splash-canvas" width="256" height="256"></canvas>
+  <div id="splash-name">ISKA Karate</div>
   <div id="splash-sub">Attendance System</div>
   <div id="splash-dots"><span></span><span></span><span></span></div>
 </div>
 
-<!-- SUCCESS OVERLAY -->
+<!-- SUCCESS -->
 <div id="successOverlay" class="success-overlay">
   <div class="success-card">
     <svg class="check-svg" viewBox="0 0 90 90">
@@ -785,775 +463,780 @@ tbody tr:hover td { background: #fafafa; color: var(--text); }
 
 <div class="shell">
 
-  <!-- ════ SIDEBAR ════ -->
+  <!-- SIDEBAR -->
   <div class="sidebar">
     <div class="brand">
-      <div class="brand-badge">
-        <!-- Icon injected by JS -->
+      <div class="brand-row">
         <div class="brand-icon" id="brandIconWrap"></div>
-        <div class="brand-text">
-          ISKA Karate
-          <span>Attendance System</span>
-        </div>
+        <div><div class="brand-name">ISKA Karate</div><div class="brand-tag">Attendance</div></div>
+      </div>
+    </div>
+    <nav class="nav">
+      <div class="nav-lbl">Menu</div>
+      <button class="navbtn active" id="navAttendance" onclick="showPage('attendance',this)">
+        <span class="nb-ico">📋</span>
+        <span class="nb-lbl">Attendance</span>
+        <span class="nb-badge" id="navBadge"></span>
+      </button>
+      <button class="navbtn" onclick="showPage('payments',this)">
+        <span class="nb-ico">💳</span><span class="nb-lbl">Payments</span>
+      </button>
+      <button class="navbtn" onclick="showPage('reports',this)">
+        <span class="nb-ico">📊</span><span class="nb-lbl">Reports</span>
+      </button>
+    </nav>
+    <div class="sidebar-footer">© 2026 ISKA Karate — All Rights Reserved<br><b>Author: Narayan Bhattarai</b></div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="main">
+    <div class="topbar">
+      <div class="topbar-title" id="topbarTitle">Attendance</div>
+      <div class="topbar-right">
+        <div class="topbar-date" id="topbarDate"></div>
+        <div class="backup-pill" id="backupPill"><div class="bp-dot" id="backupDot"></div><span id="backupLabel">Ready</span></div>
+        <div class="live-dot"></div>
       </div>
     </div>
 
-    <nav class="nav">
-      <div class="nav-label">Navigation</div>
-      <button class="navbtn active" onclick="showPage('attendance',this)">
-        <span class="icon">📋</span> Attendance
-      </button>
-      <button class="navbtn" onclick="showPage('payments',this)">
-        <span class="icon">💳</span> Payments
-      </button>
-      <button class="navbtn" onclick="showPage('reports',this)">
-        <span class="icon">📊</span> Reports
-      </button>
-    </nav>
+    <div class="scroll" id="mainScroll">
 
-    <div class="sidebar-footer">
-      © 2026 ISKA Karate<br>
-      Author: Narayan Bhattarai
-    </div>
-  </div>
-
-  <!-- ════ MAIN ════ -->
-  <div class="main">
-
-    <div class="topbar">
-      <div class="topbar-title" id="topbarTitle">Attendance</div>
-      <div class="topbar-date" id="topbarDate"></div>
-      <div class="status-dot"></div>
-    </div>
-
-    <div class="scroll">
-
-      <!-- ══ ATTENDANCE PAGE ══ -->
+      <!-- ── ATTENDANCE ── -->
       <div id="attendance" class="page active">
-        <div class="grid-2">
+
+        <!-- ITEM 1: Date chip header -->
+        <div class="att-header">
+          <div>
+            <h1>Attendance</h1>
+            <p id="attSub">Recording for today</p>
+          </div>
+          <div class="date-chip">
+            <div>
+              <div class="date-chip-day" id="chipDay"></div>
+              <div class="date-chip-num" id="chipNum"></div>
+              <div class="date-chip-mon" id="chipMon"></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ITEM 3: 2fr / 1fr grid -->
+        <div class="att-grid">
 
           <!-- CHECK IN -->
-          <div class="card">
-            <div class="card-title">
-              Check-In <span class="badge badge-in">In</span>
+          <div class="card" id="cardCheckIn">
+            <div class="card-hd">
+              <div class="card-hd-icon chi-amber">📋</div>
+              <div class="card-hd-title">Check-In</div>
+              <span class="pill pill-green">● In</span>
             </div>
 
             <div class="field">
-              <label>Student Name</label>
-              <input id="studentIn" placeholder="Type to search or enter name…" autocomplete="off">
+              <div class="field-lbl">🎓 Student Name</div>
+              <input id="studentIn" placeholder="Type or search student…"
+                autocomplete="off" autocorrect="off" autocapitalize="words"
+                spellcheck="false" inputmode="text" enterkeyhint="next">
               <div id="studentInSuggest" class="suggestions"></div>
-              <div id="errStudentIn" class="err">⚠ Student name is required</div>
+              <div id="errStudentIn" class="field-err">Student name is required</div>
             </div>
 
             <div class="field">
-              <label>Parent / Guardian</label>
-              <input id="parentIn" placeholder="Type to search or enter name…" autocomplete="off">
+              <div class="field-lbl">👤 Parent / Guardian</div>
+              <input id="parentIn" placeholder="Type or search parent…"
+                autocomplete="off" autocorrect="off" autocapitalize="words"
+                spellcheck="false" inputmode="text" enterkeyhint="next">
               <div id="parentInSuggest" class="suggestions"></div>
-              <div id="errParentIn" class="err">⚠ Parent/Guardian is required</div>
+              <div id="errParentIn" class="field-err">Parent / Guardian is required</div>
             </div>
 
             <div class="field">
-              <label>Relationship</label>
-              <input id="relation" placeholder="e.g. Mother, Father, Guardian">
-              <div id="errRelation" class="err">⚠ Relationship is required</div>
+              <div class="field-lbl">🔗 Relationship</div>
+              <div class="sel-wrap">
+                <select id="relation">
+                  <option value="">Select relationship…</option>
+                  <option>Mother</option><option>Father</option>
+                  <option>Guardian</option><option>Grandparent</option>
+                  <option>Sibling</option><option>Other</option>
+                </select>
+              </div>
+              <div id="errRelation" class="field-err">Relationship is required</div>
             </div>
 
-            <div class="field sig">
-              <label>Signature (auto-filled from parent name)</label>
-              <input id="signature" placeholder="Signature" readonly>
+            <!-- ITEM 7: Signature with lock hint -->
+            <div class="field sig-field">
+              <div class="field-lbl">✍️ Signature</div>
+              <input id="signature" placeholder="Auto-filled from parent name" readonly tabindex="-1">
+              <div class="sig-field-hint">
+                <span class="lock-icon">🔒</span>
+                <span>Automatically filled from the parent / guardian name above</span>
+              </div>
             </div>
 
-            <button class="btn btn-primary" onclick="checkIn()">
-              ✅ Check In
+            <!-- ITEM 8: Clear form button -->
+            <button class="btn btn-clear" onclick="clearCheckInForm()" style="margin-top:4px">
+              ✕ Clear Form
             </button>
           </div>
 
           <!-- CHECK OUT -->
-          <div class="card">
-            <div class="card-title">
-              Check-Out <span class="badge badge-out">Out</span>
+          <div class="card" id="cardCheckOut">
+            <div class="card-hd">
+              <div class="card-hd-icon chi-red">🚪</div>
+              <div class="card-hd-title">Check-Out</div>
+              <span class="pill pill-red">● Out</span>
             </div>
-
             <div class="field">
-              <label>Student Name</label>
-              <input id="studentOut" placeholder="Type to search…" autocomplete="off">
+              <div class="field-lbl">🎓 Student Name</div>
+              <input id="studentOut" placeholder="Type or search student…"
+                autocomplete="off" autocorrect="off" autocapitalize="words"
+                spellcheck="false" inputmode="text" enterkeyhint="done">
               <div id="studentOutSuggest" class="suggestions"></div>
-              <div id="errStudentOut" class="err">⚠ Student name is required</div>
+              <div id="errStudentOut" class="field-err">Student name is required</div>
             </div>
-
-            <p style="font-size:13px;color:#6b7280;line-height:1.6;margin:12px 0 16px;">
-              Select the student leaving class. Their check-out time will be recorded automatically.
-            </p>
-
-            <button class="btn btn-danger" onclick="checkOut()">
-              🚪 Check Out
-            </button>
+            <div class="info-box">
+              ℹ️ Select the student leaving. Departure time is recorded automatically.
+            </div>
           </div>
 
         </div>
+
+        <div class="action-strip">
+          <button class="btn btn-primary" id="btnCheckIn"  onclick="handleCheckIn()">📋Check In</button>
+          <button class="btn btn-danger"  id="btnCheckOut" onclick="handleCheckOut()">🚪 Check Out</button>
+        </div>
       </div>
 
-      <!-- ══ PAYMENTS PAGE ══ -->
+      <!-- ── PAYMENTS ── -->
       <div id="payments" class="page">
-        <div class="card" style="max-width:620px">
-          <div class="card-title">
-            Record Payment <span class="badge badge-pay">Pay</span>
-          </div>
+        <div class="pg-intro">
+          <h1>Record Payment</h1>
+          <p>Log tuition and fee collections</p>
+        </div>
 
+        <!-- ITEM 5: Month summary -->
+        <div class="month-summary" id="monthSummary"></div>
+
+        <div class="card" style="max-width:640px">
+          <div class="card-hd">
+            <div class="card-hd-icon chi-blue">💳</div>
+            <div class="card-hd-title">Payment Details</div>
+            <span class="pill pill-blue">Pay</span>
+          </div>
           <div class="field">
-            <label>Student Name</label>
-            <input id="payStudent" placeholder="Type to search or enter name…" autocomplete="off">
+            <div class="field-lbl">🎓 Student Name</div>
+            <input id="payStudent" placeholder="Type or search student…"
+              autocomplete="off" autocorrect="off" autocapitalize="words"
+              spellcheck="false" inputmode="text" enterkeyhint="next">
             <div id="payStudentSuggest" class="suggestions"></div>
-            <div id="errPayStudent" class="err">⚠ Student name is required</div>
+            <div id="errPayStudent" class="field-err">Student name is required</div>
           </div>
-
           <div class="field">
-            <label>Parent / Guardian</label>
-            <input id="payParent" placeholder="Type to search or enter name…" autocomplete="off">
+            <div class="field-lbl">👤 Parent / Guardian</div>
+            <input id="payParent" placeholder="Type or search parent…"
+              autocomplete="off" autocorrect="off" autocapitalize="words"
+              spellcheck="false" inputmode="text" enterkeyhint="next">
             <div id="payParentSuggest" class="suggestions"></div>
-            <div id="errPayParent" class="err">⚠ Parent/Guardian is required</div>
+            <div id="errPayParent" class="field-err">Parent / Guardian is required</div>
           </div>
-
           <div class="grid-2" style="gap:14px">
-            <div class="field">
-              <label>Payment Type</label>
-              <select id="payType">
-                <option value="Cash">Cash</option>
-                <option value="Check">Check</option>
-                <option value="Credit Card">Credit Card</option>
-                <option value="Zelle">Zelle</option>
-                <option value="Apple Pay">Apple Pay</option>
-                <option value="Other">Other</option>
-              </select>
+            <div class="field" style="margin-bottom:0">
+              <div class="field-lbl">💰 Payment Type</div>
+              <div class="sel-wrap">
+                <select id="payType">
+                  <option value="Cash">Cash</option><option value="Check">Check</option>
+                  <option value="Credit Card">Credit Card</option><option value="Zelle">Zelle</option>
+                  <option value="Apple Pay">Apple Pay</option><option value="Other">Other</option>
+                </select>
+              </div>
             </div>
-            <div class="field">
-              <label>Amount ($)</label>
-              <input id="payAmount" placeholder="0.00" type="number" min="0" step="0.01">
-              <div id="errPayAmount" class="err">⚠ Valid amount required</div>
+            <div class="field" style="margin-bottom:0">
+              <div class="field-lbl">💵 Amount</div>
+              <div class="prefix-wrap">
+                <span class="prefix-sym">$</span>
+                <input id="payAmount" placeholder="0.00" type="number" min="0.01" step="0.01" inputmode="decimal" enterkeyhint="done">
+              </div>
+              <div id="errPayAmount" class="field-err">Enter a valid amount</div>
             </div>
           </div>
-
-          <div class="field">
-            <label>For Month</label>
-            <select id="payMonth"></select>
+          <div class="field" style="margin-top:16px">
+            <div class="field-lbl">📅 For Month</div>
+            <div class="sel-wrap"><select id="payMonth"></select></div>
           </div>
-
-          <button class="btn btn-primary" onclick="savePayment()">
-            💳 Save Payment
-          </button>
+          <div class="pay-save-wrap">
+            <button class="btn btn-primary" id="btnSavePay" onclick="savePayment()">💳 Save Payment</button>
+          </div>
         </div>
       </div>
 
-      <!-- ══ REPORTS PAGE ══ -->
+      <!-- ── REPORTS ── -->
       <div id="reports" class="page">
+        <div class="pg-intro"><h1>Reports</h1><p>Attendance records, payment history, and data backup</p></div>
 
-        <!-- Attendance Report -->
         <div class="card">
-          <div class="card-title">Attendance Report</div>
-          <div class="report-controls">
-            <input type="date" id="attendanceDate" onchange="loadAttendanceReport()">
-          </div>
+          <div class="card-hd"><div class="card-hd-icon chi-amber">📋</div><div class="card-hd-title">Attendance Report</div></div>
+          <div class="report-ctrl"><input type="date" id="attendanceDate" onchange="loadAttReport()"></div>
+          <div class="stat-row" id="attStats"></div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Date</th><th>Student</th><th>Status</th>
-                  <th>In</th><th>Out</th><th>Parent</th>
-                  <th>Relationship</th><th>Signature</th><th>Fee</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Date</th><th>Student</th><th>Status</th><th>In</th><th>Out</th><th>Parent</th><th>Relationship</th><th>Signature</th><th>Fee</th></tr></thead>
               <tbody id="attendanceLog"></tbody>
             </table>
           </div>
-          <button class="btn btn-export" onclick="exportAttendancePDF()">
-            📄 Export Attendance PDF
-          </button>
+          <button class="btn btn-export" onclick="exportAttPDF()">📄 Export Attendance PDF</button>
         </div>
 
-        <!-- Payment Report -->
         <div class="card">
-          <div class="card-title">Payment Report</div>
-          <div class="report-controls">
-            <input type="month" id="paymentReportMonth" onchange="loadPaymentReport()">
-          </div>
+          <div class="card-hd"><div class="card-hd-icon chi-green">💳</div><div class="card-hd-title">Payment Report</div></div>
+          <div class="report-ctrl"><input type="month" id="paymentMonth" onchange="loadPayReport()"></div>
+          <div class="stat-row" id="payStats"></div>
           <div class="table-wrap">
             <table>
-              <thead>
-                <tr>
-                  <th>Date</th><th>Student</th><th>Parent</th>
-                  <th>Month</th><th>Type</th><th>Amount</th>
-                </tr>
-              </thead>
+              <thead><tr><th>Date</th><th>Student</th><th>Parent</th><th>Month</th><th>Type</th><th>Amount</th></tr></thead>
               <tbody id="paymentLog"></tbody>
             </table>
           </div>
-          <button class="btn btn-export" onclick="exportPaymentPDF()">
-            📄 Export Payment PDF
-          </button>
+          <button class="btn btn-export" onclick="exportPayPDF()">📄 Export Payment PDF</button>
         </div>
 
+        <div class="card">
+          <div class="card-hd"><div class="card-hd-icon chi-purple">🔒</div><div class="card-hd-title">Backup &amp; Restore</div><span class="pill pill-purple" style="font-size:10px;padding:3px 9px">Auto-Save</span></div>
+          <p style="font-size:13px;color:var(--pg-text3);line-height:1.6;margin-bottom:18px">Data is backed up automatically after every action. Download a copy or restore from a previous backup file.</p>
+          <div style="display:flex;gap:12px;flex-wrap:wrap">
+            <button class="btn btn-blue"  style="flex:1;min-width:140px;margin-top:0" onclick="downloadBackup()">⬇ Download Backup</button>
+            <button class="btn btn-ghost" style="flex:1;min-width:140px;margin-top:0" onclick="document.getElementById('restoreFile').click()">⬆ Restore from File</button>
+          </div>
+          <input type="file" id="restoreFile" accept=".json" style="display:none" onchange="restoreBackup(this)">
+          <div class="bk-history">
+            <div class="bk-history-lbl">Auto-Save History — Last 3</div>
+            <div id="bkHistoryList"></div>
+          </div>
+        </div>
       </div>
 
-      <!-- LEGAL -->
-      <div class="legal-card">
+      <div class="legal">
         <strong>Legal Notice</strong>
-        By using this attendance and payment system, all submitted information — including attendance entries,
-        payment records, timestamps, and electronic acknowledgments — is considered an official business record.
-        Parent, guardian, student, or authorized representative signatures entered electronically constitute
-        acknowledgment of the related activity. Payment information may be used for billing, tuition tracking,
-        financial reporting, audit, and dispute resolution. All records are stored locally on this device.
-        Unauthorized access, alteration, deletion, or misuse of data is strictly prohibited and may result in
-        civil liability and/or criminal penalties. By continuing, users agree to all applicable organizational
-        policies, privacy requirements, and recordkeeping procedures.
+        By using this system, all submitted information — attendance entries, payment records, timestamps, and signatures — is considered an official business record. Signatures entered electronically constitute acknowledgment of the related activity. All records are stored locally on this device. Unauthorized access or misuse is strictly prohibited and may result in civil liability or criminal penalties. By continuing, users agree to all applicable policies and recordkeeping procedures.
       </div>
 
     </div><!-- /scroll -->
 
-    <!-- FOOTER -->
     <div class="app-footer">
-      <span class="footer-copy">© 2026 ISKA Karate — All Rights Reserved</span>
-      <span class="footer-divider">|</span>
-      <span class="footer-author">Author: Narayan Bhattarai</span>
+      <span class="fc">© 2026 ISKA Karate — All Rights Reserved</span>
+      <span class="fs">|</span>
+      <span class="fa">Author: Narayan Bhattarai</span>
     </div>
-
   </div><!-- /main -->
 </div><!-- /shell -->
 
 <script>
-/* ═══════════════════════════════════════════════════════════════
-   ISKA KARATE ATTENDANCE SYSTEM — OPTIMISED JS
-   Key improvements over previous version:
-   1. Safe localStorage reads — all wrapped in try/catch
-   2. Duplicate check-in guard with clear warning
-   3. Check-out validates student is actually checked in
-   4. Amount validated as a positive number
-   5. Icon canvas drawn once, reused everywhere
-   6. Toast for warnings (non-blocking), success overlay for success
-   7. Empty-state rows in tables
-   8. Attendance date always defaults to today on every page load
-═══════════════════════════════════════════════════════════════ */
+/* =========================================================
+   ISKA KARATE ATTENDANCE — MAIN SCRIPT
+   No 'use strict' to avoid strict-mode edge cases on
+   older Android WebViews.
+   No ??, ?. operators — replaced with explicit checks.
+========================================================= */
 
-/* ── FULLSCREEN on first touch ── */
-document.addEventListener("touchstart", ()=>{
-  const el = document.documentElement;
-  (el.requestFullscreen || el.webkitRequestFullscreen || (()=>{})).call(el);
-}, {once:true});
+/* ── Fullscreen on first touch ── */
+document.addEventListener('touchstart', function() {
+  var el = document.documentElement;
+  var fn = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (fn) { try { fn.call(el); } catch(e) {} }
+}, { once: true });
 
-/* ── TOPBAR DATE ── */
-(function(){
-  const el = document.getElementById("topbarDate");
-  if(el) el.textContent = new Date().toLocaleDateString("en-US",{
-    weekday:"long", year:"numeric", month:"long", day:"numeric"
-  });
-})();
+var PAGE_TITLES = { attendance:'Attendance', payments:'Payments', reports:'Reports' };
 
-/* ── PAGE SWITCH ── */
-const PAGE_TITLES = { attendance:"Attendance", payments:"Payments", reports:"Reports" };
-function showPage(id, btn){
-  document.querySelectorAll(".page").forEach(p => p.classList.remove("active"));
-  document.getElementById(id).classList.add("active");
-  document.querySelectorAll(".navbtn").forEach(b => b.classList.remove("active"));
-  btn.classList.add("active");
-  const t = document.getElementById("topbarTitle");
-  if(t) t.textContent = PAGE_TITLES[id] || id;
+function showPage(id, btn) {
+  var pages = document.querySelectorAll('.page');
+  for (var i = 0; i < pages.length; i++) pages[i].classList.remove('active');
+  var pg = document.getElementById(id);
+  if (pg) pg.classList.add('active');
+  var btns = document.querySelectorAll('.navbtn');
+  for (var j = 0; j < btns.length; j++) btns[j].classList.remove('active');
+  btn.classList.add('active');
+  var t = document.getElementById('topbarTitle');
+  if (t) t.textContent = PAGE_TITLES[id] || id;
+  if (id === 'reports') { loadAttReport(); loadPayReport(); renderBkHistory(); }
+  if (id === 'payments') { updateMonthSummary(); }
 }
 
-/* ── DATE HELPERS ── */
-function today(){ return new Date().toISOString().split("T")[0]; }
-function thisMonth(){ return today().slice(0,7); }
+/* ── Date helpers ── */
+function today() { return new Date().toISOString().split('T')[0]; }
+function thisMonth() { return today().slice(0,7); }
+function esc(str) { return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function norm(v) { return (v || '').trim().toLowerCase(); }
 
-/* ═══════════════════════════════════════════
-   SAFE STORAGE — all reads wrapped in try/catch
-   so corrupted data never crashes the app
-═══════════════════════════════════════════ */
-function safeGet(key, fallback){
-  try { return JSON.parse(localStorage.getItem(key)) ?? fallback; }
-  catch(e){ console.warn("Storage read error:", key, e); return fallback; }
+/* ── Safe storage ── */
+function safeGet(key, fallback) {
+  try {
+    var raw = localStorage.getItem(key);
+    if (raw === null || raw === undefined) return fallback;
+    var parsed = JSON.parse(raw);
+    return (parsed !== null && parsed !== undefined) ? parsed : fallback;
+  } catch(e) { console.warn('Storage read:', key, e); return fallback; }
 }
-function safeSet(key, val){
+function safeSet(key, val) {
   try { localStorage.setItem(key, JSON.stringify(val)); return true; }
-  catch(e){
-    if(e.name === "QuotaExceededError"){
-      showToast("⚠ Storage full — free up space or export old records", true);
+  catch(e) {
+    if (e.name === 'QuotaExceededError') showToast('Storage full — export records to free space', true);
+    console.warn('Storage write:', key, e); return false;
+  }
+}
+function attKey(date) { return 'attendance_' + date; }
+function getAtt(date)  { return safeGet(attKey(date), []); }
+function saveAtt(date, data) { safeSet(attKey(date), data); triggerBackup(); updateNavBadge(); }
+function getPay()      { return safeGet('payments', []); }
+function savePay(data) { safeSet('payments', data); triggerBackup(); }
+
+/* ── Backup ── */
+var _backupTimer = null;
+function triggerBackup() { clearTimeout(_backupTimer); _backupTimer = setTimeout(function(){ doBackup(); }, 300); }
+function buildPayload() {
+  var p = { version:2, exportedAt:new Date().toISOString(), appName:'ISKA Karate Attendance', attendance:{}, payments:getPay() };
+  var keys = Object.keys(localStorage);
+  for (var i = 0; i < keys.length; i++) {
+    if (keys[i].indexOf('attendance_') === 0) p.attendance[keys[i]] = safeGet(keys[i], []);
+  }
+  return p;
+}
+function doBackup() {
+  try {
+    var pill = document.getElementById('backupPill');
+    var label = document.getElementById('backupLabel');
+    if (pill) pill.className = 'backup-pill saving';
+    var json = JSON.stringify(buildPayload());
+    var now = new Date();
+    var todayKey = today();
+    var hist = safeGet('backup_history', []);
+    var found = false;
+    for (var i = 0; i < hist.length; i++) {
+      if (hist[i].savedAt && hist[i].savedAt.slice(0,10) === todayKey) {
+        hist[i] = { savedAt:now.toISOString(), savedAtFmt:fmtDate(now), size:json.length, data:json };
+        found = true;
+        if (i !== 0) { var u = hist.splice(i,1)[0]; hist.unshift(u); }
+        break;
+      }
     }
-    console.warn("Storage write error:", key, e);
-    return false;
+    if (!found) { hist.unshift({ savedAt:now.toISOString(), savedAtFmt:fmtDate(now), size:json.length, data:json }); hist = hist.slice(0,3); }
+    safeSet('backup_history', hist);
+    setTimeout(function() {
+      if (pill)  pill.className = 'backup-pill saved';
+      if (label) label.textContent = 'Saved ' + now.toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+    }, 500);
+  } catch(e) { console.warn('Backup failed:', e); }
+}
+/* Cleaner date format: "Jun 7, 2026 · 2:34 PM" */
+function fmtDate(d) {
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var h = d.getHours(), m = d.getMinutes(), ampm = h >= 12 ? 'PM' : 'AM';
+  h = h % 12; if (!h) h = 12;
+  return months[d.getMonth()] + ' ' + d.getDate() + ', ' + d.getFullYear() + ' \xb7 ' + h + ':' + String(m).padStart(2,'0') + ' ' + ampm;
+}
+
+/* ── Signature ── */
+function setSig(val) { var s = document.getElementById('signature'); if (s) s.value = val; }
+
+/* ── Feedback ── */
+var _successTimer = null;
+function showSuccess(msg) {
+  document.getElementById('successMsg').textContent = msg;
+  var ov = document.getElementById('successOverlay');
+  if (!ov) return;
+  ov.classList.remove('show'); void ov.offsetWidth; ov.classList.add('show');
+  clearTimeout(_successTimer); _successTimer = setTimeout(function(){ ov.classList.remove('show'); }, 2500);
+}
+var _toastTimer = null;
+function showToast(msg, isWarn) {
+  var t = document.getElementById('toast'); if (!t) return;
+  t.textContent = msg; t.className = isWarn ? 'show warn' : 'show';
+  clearTimeout(_toastTimer); _toastTimer = setTimeout(function(){ t.className=''; }, 3200);
+}
+function setErr(id, show) { var el = document.getElementById(id); if (el) el.style.display = show ? 'block' : 'none'; }
+
+/* ── ITEM 2: Field validation styling on blur ── */
+function attachValidation(inputId, required) {
+  var el = document.getElementById(inputId);
+  if (!el) return;
+  el.addEventListener('blur', function() {
+    var val = el.value.trim();
+    if (!val && required) {
+      el.classList.remove('valid'); el.classList.add('invalid');
+    } else if (val) {
+      el.classList.remove('invalid'); el.classList.add('valid');
+    }
+  });
+  el.addEventListener('input', function() {
+    if (el.classList.contains('invalid') && el.value.trim()) {
+      el.classList.remove('invalid'); el.classList.add('valid');
+    }
+  });
+}
+
+/* ── ITEM 4: Nav badge ── */
+function updateNavBadge() {
+  var data = getAtt(today());
+  var inCount = 0;
+  for (var i = 0; i < data.length; i++) { if (data[i].status === 'IN') inCount++; }
+  var badge = document.getElementById('navBadge');
+  if (!badge) return;
+  if (inCount > 0) {
+    badge.textContent = inCount;
+    badge.classList.add('show');
+  } else {
+    badge.classList.remove('show');
   }
 }
 
-function attendanceKey(date){ return "attendance_" + date; }
-function getAttendance(date){ return safeGet(attendanceKey(date), []); }
-function saveAttendance(date, data){ safeSet(attendanceKey(date), data); }
-function getPayments(){ return safeGet("payments", []); }
-function savePayments(data){ safeSet("payments", data); }
-
-/* ── NORMALIZE for comparisons ── */
-function norm(v){ return (v||"").trim().toLowerCase(); }
-
-/* ── SIGNATURE AUTO-FILL ── */
-function setSignatureFrom(val){
-  const sig = document.getElementById("signature");
-  if(sig) sig.value = val;
-}
-document.getElementById("parentIn").addEventListener("input", function(){
-  setSignatureFrom(this.value);
-});
-
-/* ═══════════════════════════════════════════
-   FEEDBACK — success overlay + toast
-═══════════════════════════════════════════ */
-let successTimer = null;
-function showSuccess(msg){
-  document.getElementById("successMsg").textContent = msg;
-  const ov = document.getElementById("successOverlay");
-  ov.classList.remove("show");
-  void ov.offsetWidth;
-  ov.classList.add("show");
-  clearTimeout(successTimer);
-  successTimer = setTimeout(() => ov.classList.remove("show"), 2400);
-}
-
-let toastTimer = null;
-function showToast(msg, isWarn=false){
-  const t = document.getElementById("toast");
-  t.textContent = msg;
-  t.className = isWarn ? "show warn" : "show";
-  clearTimeout(toastTimer);
-  toastTimer = setTimeout(()=>{ t.className=""; }, 3000);
-}
-
-/* ── FORM ERRORS ── */
-function setErr(id, show){
-  const el = document.getElementById(id);
-  if(el) el.style.display = show ? "block" : "none";
-}
-
-/* ═══════════════════════════════════════════
-   PAYMENT MONTH DROPDOWN
-═══════════════════════════════════════════ */
-function loadPaymentMonths(){
-  const sel = document.getElementById("payMonth");
-  if(!sel) return;
-  sel.innerHTML = "";
-  const now = new Date();
-  for(let i=-12; i<=1; i++){
-    const d = new Date(now.getFullYear(), now.getMonth()+i, 1);
-    const val = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0");
-    const opt = document.createElement("option");
+/* ── Payment months ── */
+function loadPayMonths() {
+  var sel = document.getElementById('payMonth'); if (!sel) return;
+  sel.innerHTML = '';
+  var now = new Date();
+  for (var i = -12; i <= 1; i++) {
+    var d = new Date(now.getFullYear(), now.getMonth()+i, 1);
+    var val = d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+    var opt = document.createElement('option');
     opt.value = val;
-    opt.textContent = d.toLocaleDateString("en-US",{year:"numeric",month:"long"});
-    if(i===0) opt.selected = true;
+    opt.textContent = d.toLocaleDateString('en-US', {year:'numeric',month:'long'});
+    if (i === 0) opt.selected = true;
     sel.appendChild(opt);
   }
 }
 
-/* ═══════════════════════════════════════════
-   CHECK IN — with duplicate guard
-═══════════════════════════════════════════ */
-function checkIn(){
-  const sIn  = document.getElementById("studentIn");
-  const pIn  = document.getElementById("parentIn");
-  const rel  = document.getElementById("relation");
-  const sig  = document.getElementById("signature");
-  const date = today();   // always use today, not a date field on another page
-
-  let ok = true;
-  if(!sIn.value.trim()){ setErr("errStudentIn",true);  ok=false; } else setErr("errStudentIn",false);
-  if(!pIn.value.trim()){ setErr("errParentIn",true);   ok=false; } else setErr("errParentIn",false);
-  if(!rel.value.trim()){ setErr("errRelation",true);   ok=false; } else setErr("errRelation",false);
-  if(!ok) return;
-
-  const data = getAttendance(date);
-
-  // ── DUPLICATE GUARD: warn if student already checked in today ──
-  const alreadyIn = data.find(r =>
-    norm(r.student) === norm(sIn.value) && r.status === "IN"
-  );
-  if(alreadyIn){
-    showToast(`⚠ ${sIn.value.trim()} is already checked in (${alreadyIn.in})`, true);
-    return;
+/* ── ITEM 5: Month summary ── */
+function updateMonthSummary() {
+  var el = document.getElementById('monthSummary'); if (!el) return;
+  var sel = document.getElementById('payMonth');
+  var month = sel ? sel.value : thisMonth();
+  var payments = getPay();
+  var count = 0, total = 0;
+  for (var i = 0; i < payments.length; i++) {
+    if (payments[i].month === month) { count++; total += parseFloat(payments[i].amount) || 0; }
   }
-
-  const paid = getPayments().find(p =>
-    norm(p.student) === norm(sIn.value) && p.month === date.slice(0,7)
-  );
-
-  data.push({
-    date,
-    student:      sIn.value.trim(),
-    status:       "IN",
-    in:           new Date().toLocaleTimeString(),
-    out:          "",
-    parent:       pIn.value.trim(),
-    relationship: rel.value.trim(),
-    signature:    sig.value.trim(),
-    fee:          paid ? "PAID" : "UNPAID"
-  });
-  saveAttendance(date, data);
-
-  sIn.value=""; pIn.value=""; rel.value=""; sig.value="";
-  closeAllSuggestions();
-  loadAttendanceReport();
-  showSuccess("Checked In Successfully");
+  var attData = getAtt(today());
+  var unpaid = 0;
+  for (var j = 0; j < attData.length; j++) { if (attData[j].fee === 'UNPAID') unpaid++; }
+  el.innerHTML =
+    '<div class="ms-chip"><span class="ms-icon">💰</span><div><div class="ms-val" style="color:var(--green)">$' + total.toFixed(2) + '</div><div class="ms-lbl">Collected ' + (month||'this month') + '</div></div></div>' +
+    '<div class="ms-chip"><span class="ms-icon">📋</span><div><div class="ms-val">' + count + '</div><div class="ms-lbl">Payments recorded</div></div></div>' +
+    (unpaid > 0 ? '<div class="ms-chip"><span class="ms-icon">⚠️</span><div><div class="ms-val" style="color:var(--red)">' + unpaid + '</div><div class="ms-lbl">Unpaid today</div></div></div>' : '');
 }
 
-/* ═══════════════════════════════════════════
-   CHECK OUT — validates student is checked in
-═══════════════════════════════════════════ */
-function checkOut(){
-  const sOut = document.getElementById("studentOut");
-  if(!sOut.value.trim()){ setErr("errStudentOut",true); return; }
-  setErr("errStudentOut",false);
+/* ── ITEM 8: Clear form ── */
+function clearCheckInForm() {
+  var ids = ['studentIn','parentIn','signature'];
+  for (var i = 0; i < ids.length; i++) {
+    var el = document.getElementById(ids[i]);
+    if (el) { el.value=''; el.classList.remove('valid','invalid'); }
+  }
+  var rel = document.getElementById('relation');
+  if (rel) { rel.value=''; rel.classList.remove('valid','invalid'); }
+  var errs = ['errStudentIn','errParentIn','errRelation'];
+  for (var j = 0; j < errs.length; j++) setErr(errs[j], false);
+  closeAllSug();
+}
 
-  const date = today();
-  const data = getAttendance(date);
-  const rec  = data.find(r =>
-    norm(r.student) === norm(sOut.value) && r.status === "IN"
-  );
+/* ── Scroll to card + ping ── */
+function scrollToCard(cardId) {
+  var card = document.getElementById(cardId);
+  var scroll = document.getElementById('mainScroll');
+  if (!card || !scroll) return;
+  card.classList.remove('scroll-target'); void card.offsetWidth;
+  var offset = card.getBoundingClientRect().top - scroll.getBoundingClientRect().top - 16;
+  scroll.scrollBy({ top:offset, behavior:'smooth' });
+  setTimeout(function() {
+    card.classList.add('scroll-target');
+    setTimeout(function(){ card.classList.remove('scroll-target'); }, 600);
+  }, 180);
+}
 
-  if(!rec){
-    // Student wasn't checked in today
-    const wasHere = data.find(r => norm(r.student) === norm(sOut.value));
-    if(wasHere){
-      showToast(`ℹ ${sOut.value.trim()} already checked out at ${wasHere.out}`, false);
-    } else {
-      showToast(`⚠ No check-in found for "${sOut.value.trim()}" today`, true);
+/* ── Button loading state ── */
+function setBtnLoading(id, loading) {
+  var btn = document.getElementById(id); if (!btn) return;
+  btn.disabled = loading;
+  if (loading) btn.setAttribute('data-orig', btn.textContent);
+  else { var orig = btn.getAttribute('data-orig'); if (orig) btn.textContent = orig; }
+}
+
+/* ── Check In ── */
+function handleCheckIn() {
+  scrollToCard('cardCheckIn');
+  setBtnLoading('btnCheckIn', true);
+  setTimeout(function(){ checkIn(); setBtnLoading('btnCheckIn', false); }, 50);
+}
+function checkIn() {
+  var sIn = document.getElementById('studentIn');
+  var pIn = document.getElementById('parentIn');
+  var rel = document.getElementById('relation');
+  var sig = document.getElementById('signature');
+  var date = today();
+  var ok = true;
+  if (!sIn.value.trim()) { setErr('errStudentIn',true); sIn.classList.add('invalid'); ok=false; } else { setErr('errStudentIn',false); }
+  if (!pIn.value.trim()) { setErr('errParentIn',true);  pIn.classList.add('invalid'); ok=false; } else { setErr('errParentIn',false);  }
+  if (!rel.value)        { setErr('errRelation',true);  rel.classList.add('invalid'); ok=false; } else { setErr('errRelation',false);  }
+  if (!ok) return;
+  var data = getAtt(date);
+  for (var i = 0; i < data.length; i++) {
+    if (norm(data[i].student) === norm(sIn.value) && data[i].status === 'IN') {
+      showToast(sIn.value.trim() + ' is already checked in at ' + data[i].in, true); return;
     }
-    sOut.value="";
-    closeAllSuggestions();
-    return;
   }
-
-  rec.status = "OUT";
-  rec.out    = new Date().toLocaleTimeString();
-  saveAttendance(date, data);
-
-  sOut.value="";
-  closeAllSuggestions();
-  loadAttendanceReport();
-  showSuccess("Checked Out Successfully");
+  var payments = getPay(); var paid = false;
+  for (var j = 0; j < payments.length; j++) {
+    if (norm(payments[j].student)===norm(sIn.value) && payments[j].month===date.slice(0,7)) { paid=true; break; }
+  }
+  data.push({ date:date, student:sIn.value.trim(), status:'IN', in:new Date().toLocaleTimeString(), out:'', parent:pIn.value.trim(), relationship:rel.value, signature:sig.value.trim(), fee:paid?'PAID':'UNPAID' });
+  saveAtt(date, data);
+  clearCheckInForm();
+  loadAttReport();
+  showSuccess('Checked In Successfully');
 }
 
-/* ═══════════════════════════════════════════
-   SAVE PAYMENT — validates amount is a number
-═══════════════════════════════════════════ */
-function savePayment(){
-  const pStu = document.getElementById("payStudent");
-  const pPar = document.getElementById("payParent");
-  const pAmt = document.getElementById("payAmount");
-  const pTyp = document.getElementById("payType");
-  const pMon = document.getElementById("payMonth");
-
-  let ok = true;
-  if(!pStu.value.trim()){ setErr("errPayStudent",true);  ok=false; } else setErr("errPayStudent",false);
-  if(!pPar.value.trim()){ setErr("errPayParent",true);   ok=false; } else setErr("errPayParent",false);
-
-  const amtRaw = parseFloat(pAmt.value);
-  if(!pAmt.value.trim() || isNaN(amtRaw) || amtRaw <= 0){
-    setErr("errPayAmount",true); ok=false;
-  } else {
-    setErr("errPayAmount",false);
-  }
-  if(!ok) return;
-
-  const payments = getPayments();
-  payments.push({
-    paymentDate: new Date().toLocaleDateString(),
-    student:     pStu.value.trim(),
-    parent:      pPar.value.trim(),
-    type:        pTyp.value,
-    amount:      amtRaw.toFixed(2),   // always stored as clean decimal string
-    month:       pMon.value
-  });
-  savePayments(payments);
-
-  // Sync PAID status into all attendance records for this student + month
-  Object.keys(localStorage)
-    .filter(k => k.startsWith("attendance_"))
-    .forEach(key => {
-      const recs = safeGet(key, []);
-      let changed = false;
-      recs.forEach(r => {
-        if(norm(r.student) === norm(pStu.value) && r.date.slice(0,7) === pMon.value){
-          r.fee = "PAID"; changed = true;
-        }
-      });
-      if(changed) safeSet(key, recs);
-    });
-
-  pStu.value=""; pPar.value=""; pAmt.value="";
-  closeAllSuggestions();
-  loadPaymentReport();
-  loadAttendanceReport();
-  showSuccess("Payment Saved");
+/* ── Check Out ── */
+function handleCheckOut() {
+  scrollToCard('cardCheckOut');
+  setBtnLoading('btnCheckOut', true);
+  setTimeout(function(){ checkOut(); setBtnLoading('btnCheckOut', false); }, 50);
 }
-
-/* ═══════════════════════════════════════════
-   REPORTS — with empty-state rows
-═══════════════════════════════════════════ */
-function loadAttendanceReport(){
-  const dateEl = document.getElementById("attendanceDate");
-  const date   = dateEl ? dateEl.value : today();
-  const data   = getAttendance(date);
-  const tbody  = document.getElementById("attendanceLog");
-  if(!tbody) return;
-
-  if(!data.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="9">No attendance records for ${date}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = data.map(r => `
-    <tr>
-      <td>${r.date}</td>
-      <td><strong>${r.student}</strong></td>
-      <td><span class="tg tg-${r.status.toLowerCase()}">${r.status}</span></td>
-      <td>${r.in}</td>
-      <td>${r.out || "—"}</td>
-      <td>${r.parent}</td>
-      <td>${r.relationship}</td>
-      <td class="td-sig">${r.signature}</td>
-      <td><span class="tg ${r.fee==="PAID"?"tg-paid":"tg-unpaid"}">${r.fee}</span></td>
-    </tr>`).join("");
-}
-
-function loadPaymentReport(){
-  const sel   = document.getElementById("paymentReportMonth");
-  const month = sel ? sel.value : thisMonth();
-  let data    = getPayments();
-  if(month) data = data.filter(p => p.month === month);
-  const tbody = document.getElementById("paymentLog");
-  if(!tbody) return;
-
-  if(!data.length){
-    tbody.innerHTML = `<tr class="empty-row"><td colspan="6">No payment records${month ? " for "+month : ""}</td></tr>`;
-    return;
-  }
-
-  tbody.innerHTML = data.map(r => `
-    <tr>
-      <td>${r.paymentDate}</td>
-      <td><strong>${r.student}</strong></td>
-      <td>${r.parent}</td>
-      <td>${r.month}</td>
-      <td>${r.type}</td>
-      <td><strong>$${r.amount}</strong></td>
-    </tr>`).join("");
-}
-
-/* ═══════════════════════════════════════════
-   PDF EXPORTS
-═══════════════════════════════════════════ */
-function exportAttendancePDF(){
-  if(!window.jspdf){ showToast("PDF library not loaded yet — try again", true); return; }
-  const {jsPDF} = window.jspdf;
-  const doc  = new jsPDF({orientation:"landscape"});
-  const dateEl = document.getElementById("attendanceDate");
-  const date = dateEl ? dateEl.value : today();
-
-  doc.setFont("helvetica","bold"); doc.setFontSize(15);
-  doc.text("ISKA Karate — Attendance Report: " + date, 14, 16);
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text("Generated: " + new Date().toLocaleString(), 14, 22);
-  doc.setTextColor(0);
-
-  doc.autoTable({
-    head:[["Date","Student","Status","In","Out","Parent","Relationship","Signature","Fee"]],
-    body: getAttendance(date).map(r=>[
-      r.date, r.student, r.status, r.in, r.out||"—",
-      r.parent, r.relationship, r.signature, r.fee
-    ]),
-    startY: 27,
-    styles:{ fontSize:9, cellPadding:4 },
-    headStyles:{ fillColor:[217,119,6], textColor:[10,15,30], fontStyle:"bold" },
-    alternateRowStyles:{ fillColor:[248,249,250] },
-    didParseCell(data){
-      if(data.section==="body" && data.column.index===7){
-        data.cell.styles.fontStyle = "italic";
-        data.cell.styles.fontSize  = 11;
-        data.cell.styles.textColor = [124,58,237];
-      }
-      if(data.section==="body" && data.column.index===8){
-        data.cell.styles.fontStyle = "bold";
-        data.cell.styles.textColor = data.cell.raw==="PAID" ? [5,150,105] : [220,38,38];
-      }
+function checkOut() {
+  var sOut = document.getElementById('studentOut');
+  if (!sOut.value.trim()) { setErr('errStudentOut',true); return; }
+  setErr('errStudentOut',false);
+  var date = today(); var data = getAtt(date);
+  var rec = null, was = null;
+  for (var i = 0; i < data.length; i++) {
+    if (norm(data[i].student) === norm(sOut.value)) {
+      if (data[i].status==='IN') { rec=data[i]; break; } else was=data[i];
     }
-  });
-  doc.save("attendance_" + date + ".pdf");
+  }
+  if (!rec) {
+    if (was) showToast(sOut.value.trim()+' already checked out at '+was.out, false);
+    else     showToast('No check-in found for "'+sOut.value.trim()+'" today', true);
+    sOut.value=''; closeAllSug(); return;
+  }
+  rec.status='OUT'; rec.out=new Date().toLocaleTimeString();
+  saveAtt(date, data);
+  sOut.value=''; sOut.classList.remove('valid','invalid');
+  closeAllSug(); loadAttReport();
+  showSuccess('Checked Out Successfully');
 }
 
-function exportPaymentPDF(){
-  if(!window.jspdf){ showToast("PDF library not loaded yet — try again", true); return; }
-  const {jsPDF} = window.jspdf;
-  const doc   = new jsPDF();
-  const sel   = document.getElementById("paymentReportMonth");
-  const month = sel ? sel.value : thisMonth();
-
-  doc.setFont("helvetica","bold"); doc.setFontSize(15);
-  doc.text("ISKA Karate — Payment Report: " + month, 14, 16);
-  doc.setFont("helvetica","normal"); doc.setFontSize(9);
-  doc.setTextColor(120);
-  doc.text("Generated: " + new Date().toLocaleString(), 14, 22);
-  doc.setTextColor(0);
-
-  let data = getPayments();
-  if(month) data = data.filter(p => p.month === month);
-
-  const total = data.reduce((s,r) => s + parseFloat(r.amount||0), 0);
-
-  doc.autoTable({
-    head:[["Payment Date","Student","Parent","Month","Type","Amount"]],
-    body: data.map(r=>[r.paymentDate, r.student, r.parent, r.month, r.type, "$"+r.amount]),
-    startY: 27,
-    styles:{ fontSize:10, cellPadding:4 },
-    headStyles:{ fillColor:[217,119,6], textColor:[10,15,30], fontStyle:"bold" },
-    alternateRowStyles:{ fillColor:[248,249,250] },
-    foot:[["","","","","Total","$" + total.toFixed(2)]],
-    footStyles:{ fillColor:[249,250,251], fontStyle:"bold", textColor:[10,15,30] }
-  });
-  doc.save("payments_" + month + ".pdf");
+/* ── Save Payment ── */
+function savePayment() {
+  var pStu=document.getElementById('payStudent'), pPar=document.getElementById('payParent');
+  var pAmt=document.getElementById('payAmount'), pTyp=document.getElementById('payType'), pMon=document.getElementById('payMonth');
+  var ok=true;
+  if (!pStu.value.trim()) { setErr('errPayStudent',true); pStu.classList.add('invalid'); ok=false; } else setErr('errPayStudent',false);
+  if (!pPar.value.trim()) { setErr('errPayParent',true);  pPar.classList.add('invalid'); ok=false; } else setErr('errPayParent',false);
+  var amt=parseFloat(pAmt.value);
+  if (!pAmt.value.trim()||isNaN(amt)||amt<=0) { setErr('errPayAmount',true); pAmt.classList.add('invalid'); ok=false; } else setErr('errPayAmount',false);
+  if (!ok) return;
+  var payments=getPay();
+  payments.push({ paymentDate:new Date().toLocaleDateString(), student:pStu.value.trim(), parent:pPar.value.trim(), type:pTyp.value, amount:amt.toFixed(2), month:pMon.value });
+  savePay(payments);
+  var keys=Object.keys(localStorage);
+  for (var i=0;i<keys.length;i++) {
+    if (keys[i].indexOf('attendance_')!==0) continue;
+    var recs=safeGet(keys[i],[]); var changed=false;
+    for (var j=0;j<recs.length;j++) { if(norm(recs[j].student)===norm(pStu.value)&&recs[j].date.slice(0,7)===pMon.value){recs[j].fee='PAID';changed=true;} }
+    if (changed) safeSet(keys[i],recs);
+  }
+  pStu.value=''; pPar.value=''; pAmt.value='';
+  [pStu,pPar,pAmt].forEach(function(el){el.classList.remove('valid','invalid');});
+  closeAllSug(); loadPayReport(); loadAttReport(); updateMonthSummary();
+  showSuccess('Payment Saved');
 }
 
-/* ═══════════════════════════════════════════
-   AUTOCOMPLETE
-   - Only shows substring matches (case-insensitive)
-   - Starts-with sorted first
-   - Highlighted match in blue
-   - mousedown + touchend for reliable Android tab selection
-   - dispatchEvent("input") so signature auto-fill always fires
-═══════════════════════════════════════════ */
-function getAllNames(type){
-  const names = [];
-  Object.keys(localStorage).filter(k => k.startsWith("attendance_")).forEach(k => {
-    safeGet(k, []).forEach(r => {
-      const v = type === "student" ? r.student : r.parent;
-      if(v) names.push(v);
+/* ── Reports ── */
+function loadAttReport() {
+  var dateEl=document.getElementById('attendanceDate'); var date=dateEl?dateEl.value:today();
+  var data=getAtt(date); var tbody=document.getElementById('attendanceLog'); if(!tbody)return;
+  var statsEl=document.getElementById('attStats');
+  if(statsEl){
+    if(data.length>0){
+      var inC=0,outC=0,paidC=0;
+      for(var i=0;i<data.length;i++){if(data[i].status==='IN')inC++;if(data[i].status==='OUT')outC++;if(data[i].fee==='PAID')paidC++;}
+      statsEl.innerHTML='<div class="stat-chip"><div class="sc-val">'+data.length+'</div><div class="sc-lbl">Total</div></div>'+
+        '<div class="stat-chip"><div class="sc-val" style="color:var(--green)">'+inC+'</div><div class="sc-lbl">In Class</div></div>'+
+        '<div class="stat-chip"><div class="sc-val" style="color:var(--pg-text3)">'+outC+'</div><div class="sc-lbl">Checked Out</div></div>'+
+        '<div class="stat-chip"><div class="sc-val" style="color:var(--blue)">'+paidC+'</div><div class="sc-lbl">Fees Paid</div></div>';
+    } else statsEl.innerHTML='';
+  }
+  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="9">No attendance records for '+esc(date)+'</td></tr>';return;}
+  var html='';
+  for(var k=0;k<data.length;k++){var r=data[k]; html+='<tr><td>'+esc(r.date)+'</td><td class="td-name">'+esc(r.student)+'</td><td><span class="tg tg-'+r.status.toLowerCase()+'">'+esc(r.status)+'</span></td><td>'+esc(r.in)+'</td><td>'+esc(r.out||'—')+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.relationship)+'</td><td class="td-sig">'+esc(r.signature)+'</td><td><span class="tg '+(r.fee==='PAID'?'tg-paid':'tg-unpaid')+'">'+esc(r.fee)+'</span></td></tr>';}
+  tbody.innerHTML=html;
+}
+function loadPayReport() {
+  var sel=document.getElementById('paymentMonth'); var month=sel?sel.value:thisMonth();
+  var all=getPay(); var data=[];
+  for(var i=0;i<all.length;i++){if(!month||all[i].month===month)data.push(all[i]);}
+  var statsEl=document.getElementById('payStats');
+  if(statsEl){
+    if(data.length>0){var total=0;for(var j=0;j<data.length;j++)total+=parseFloat(data[j].amount)||0;statsEl.innerHTML='<div class="stat-chip"><div class="sc-val">'+data.length+'</div><div class="sc-lbl">Payments</div></div><div class="stat-chip"><div class="sc-val" style="color:var(--green)">$'+total.toFixed(2)+'</div><div class="sc-lbl">Total</div></div>';}else statsEl.innerHTML='';
+  }
+  var tbody=document.getElementById('paymentLog'); if(!tbody)return;
+  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No payment records'+(month?' for '+esc(month):'')+'</td></tr>';return;}
+  var html='';
+  for(var k=0;k<data.length;k++){var r=data[k];html+='<tr><td>'+esc(r.paymentDate)+'</td><td class="td-name">'+esc(r.student)+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.month)+'</td><td>'+esc(r.type)+'</td><td class="td-amt">$'+esc(r.amount)+'</td></tr>';}
+  tbody.innerHTML=html;
+}
+
+/* ── PDF exports ── */
+function loadJsPDF(cb) {
+  if(window.jspdf){cb();return;}
+  showToast('Loading PDF library…',false);
+  var s1=document.createElement('script'); s1.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+  s1.onload=function(){var s2=document.createElement('script');s2.src='https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js';s2.onload=function(){cb();};s2.onerror=function(){showToast('PDF library failed to load',true);};document.head.appendChild(s2);};
+  s1.onerror=function(){showToast('PDF library failed — check internet',true);}; document.head.appendChild(s1);
+}
+function exportAttPDF(){loadJsPDF(function(){try{var jsPDF=window.jspdf.jsPDF,doc=new jsPDF({orientation:'landscape'}),dateEl=document.getElementById('attendanceDate'),date=dateEl?dateEl.value:today(),data=getAtt(date);doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('ISKA Karate — Attendance Report: '+date,14,16);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120);doc.text('Generated: '+new Date().toLocaleString(),14,22);doc.setTextColor(0);var body=[];for(var i=0;i<data.length;i++){var r=data[i];body.push([r.date,r.student,r.status,r.in,r.out||'—',r.parent,r.relationship,r.signature,r.fee]);}doc.autoTable({head:[['Date','Student','Status','In','Out','Parent','Relationship','Signature','Fee']],body:body,startY:27,styles:{fontSize:9,cellPadding:4},headStyles:{fillColor:[217,119,6],textColor:[10,15,30],fontStyle:'bold'},alternateRowStyles:{fillColor:[248,249,250]},didParseCell:function(d){if(d.section==='body'&&d.column.index===7){d.cell.styles.fontStyle='italic';d.cell.styles.fontSize=11;d.cell.styles.textColor=[124,58,237];}if(d.section==='body'&&d.column.index===8){d.cell.styles.fontStyle='bold';d.cell.styles.textColor=d.cell.raw==='PAID'?[5,150,105]:[220,38,38];}}});doc.save('attendance_'+date+'.pdf');}catch(e){showToast('PDF export failed: '+e.message,true);}});}
+function exportPayPDF(){loadJsPDF(function(){try{var jsPDF=window.jspdf.jsPDF,doc=new jsPDF(),sel=document.getElementById('paymentMonth'),month=sel?sel.value:thisMonth(),all=getPay(),data=[],total=0;for(var i=0;i<all.length;i++){if(!month||all[i].month===month)data.push(all[i]);}for(var j=0;j<data.length;j++)total+=parseFloat(data[j].amount)||0;doc.setFont('helvetica','bold');doc.setFontSize(15);doc.text('ISKA Karate — Payment Report: '+month,14,16);doc.setFont('helvetica','normal');doc.setFontSize(9);doc.setTextColor(120);doc.text('Generated: '+new Date().toLocaleString(),14,22);doc.setTextColor(0);var body=[];for(var k=0;k<data.length;k++){var r=data[k];body.push([r.paymentDate,r.student,r.parent,r.month,r.type,'$'+r.amount]);}doc.autoTable({head:[['Payment Date','Student','Parent','Month','Type','Amount']],body:body,foot:[['','','','','Total','$'+total.toFixed(2)]],startY:27,styles:{fontSize:10,cellPadding:4},headStyles:{fillColor:[217,119,6],textColor:[10,15,30],fontStyle:'bold'},footStyles:{fillColor:[249,250,251],fontStyle:'bold',textColor:[10,15,30]},alternateRowStyles:{fillColor:[248,249,250]}});doc.save('payments_'+month+'.pdf');}catch(e){showToast('PDF export failed: '+e.message,true);}});}
+
+/* ── Autocomplete ── */
+function getAllNames(type){var names=[],keys=Object.keys(localStorage);for(var i=0;i<keys.length;i++){if(keys[i].indexOf('attendance_')!==0)continue;var recs=safeGet(keys[i],[]);for(var j=0;j<recs.length;j++){var v=type==='student'?recs[j].student:recs[j].parent;if(v)names.push(v);}}var seen={},out=[];for(var k=0;k<names.length;k++){if(!seen[names[k]]){seen[names[k]]=true;out.push(names[k]);}}return out;}
+function filterNames(names,q){var ql=q.toLowerCase(),filtered=[];for(var i=0;i<names.length;i++){if(names[i].toLowerCase().indexOf(ql)!==-1)filtered.push(names[i]);}filtered.sort(function(a,b){var as=a.toLowerCase().indexOf(ql)===0,bs=b.toLowerCase().indexOf(ql)===0;return as&&!bs?-1:!as&&bs?1:a.localeCompare(b);});return filtered.slice(0,7);}
+function highlight(name,q){var i=name.toLowerCase().indexOf(q.toLowerCase());if(i===-1)return esc(name);return esc(name.slice(0,i))+'<mark>'+esc(name.slice(i,i+q.length))+'</mark>'+esc(name.slice(i+q.length));}
+function closeAllSug(){var boxes=document.querySelectorAll('.suggestions');for(var i=0;i<boxes.length;i++)boxes[i].classList.remove('open');}
+function setupSug(inputId,boxId,type,onSelect){
+  var input=document.getElementById(inputId),box=document.getElementById(boxId);
+  if(!input||!box)return;
+  input.addEventListener('input',function(){
+    var val=input.value.trim();box.innerHTML='';box.classList.remove('open','up');if(!val)return;
+    var matches=filterNames(getAllNames(type),val);if(!matches.length)return;
+    var vv=window.visualViewport,visH=vv?vv.height:window.innerHeight,rect=input.getBoundingClientRect();
+    if(rect.top>visH*0.55)box.classList.add('up');
+    for(var i=0;i<matches.length;i++){(function(name){var div=document.createElement('div');div.className='sug-item';div.innerHTML='<span class="sug-arrow">&#x203A;</span>'+highlight(name,val);function pick(e){e.preventDefault();input.value=name;var ev=document.createEvent('Event');ev.initEvent('input',true,true);input.dispatchEvent(ev);if(typeof onSelect==='function')onSelect(name);box.classList.remove('open');box.innerHTML='';}div.addEventListener('mousedown',pick);div.addEventListener('touchend',pick,false);box.appendChild(div);})(matches[i]);}
+    box.classList.add('open');
+  });
+  input.addEventListener('blur',function(){setTimeout(function(){box.classList.remove('open');},220);});
+}
+
+/* ── Backup history / download / restore ── */
+function renderBkHistory(){
+  var list=document.getElementById('bkHistoryList');if(!list)return;
+  var hist=safeGet('backup_history',[]);
+  if(!hist.length){list.innerHTML='<div style="font-size:13px;color:var(--pg-text3);padding:6px 0">No backups yet — saves automatically after your first action.</div>';return;}
+  var html='';
+  for(var i=0;i<hist.length;i++){var b=hist[i],kb=(b.size/1024).toFixed(1),tag=i===0?'<span class="bk-latest">Latest</span>':'';html+='<div class="bk-row"><span class="bk-ico">'+(i===0?'&#128190;':'&#128452;')+'</span><div class="bk-info"><div class="bk-date">'+esc(b.savedAtFmt)+' '+tag+'</div><div class="bk-size">'+kb+' KB</div></div><button class="bk-btn" onclick="downloadBkAt('+i+')">Download</button></div>';}
+  list.innerHTML=html;
+}
+function downloadBackup(){var json=JSON.stringify(buildPayload(),null,2),blob=new Blob([json],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='iska_backup_'+today()+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);showSuccess('Backup Downloaded');}
+function downloadBkAt(idx){var hist=safeGet('backup_history',[]);if(!hist[idx])return;var b=hist[idx],blob=new Blob([b.data],{type:'application/json'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='iska_backup_'+(b.savedAt?b.savedAt.slice(0,10):today())+'_v'+(idx+1)+'.json';document.body.appendChild(a);a.click();document.body.removeChild(a);URL.revokeObjectURL(url);}
+function restoreBackup(inputEl){
+  var file=inputEl.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var p=JSON.parse(e.target.result);
+      if(!p.attendance||!Array.isArray(p.payments)){showToast('Invalid backup file',true);return;}
+      var attVals=Object.keys(p.attendance).map(function(k){return p.attendance[k];}),attCount=0;
+      for(var i=0;i<attVals.length;i++)attCount+=attVals[i].length;
+      var fromDate=p.exportedAt?new Date(p.exportedAt).toLocaleString():'unknown';
+      showConfirm('Restore Backup?',['This replaces ALL current data with:','\u2022 '+attCount+' attendance records','\u2022 '+p.payments.length+' payment records','\u2022 Backup from: '+fromDate],function(){var keys=Object.keys(p.attendance);for(var k=0;k<keys.length;k++)safeSet(keys[k],p.attendance[keys[k]]);safeSet('payments',p.payments);loadAttReport();loadPayReport();doBackup();showSuccess('Data Restored Successfully');});
+    }catch(err){showToast('Could not read backup file',true);}
+    inputEl.value='';
+  };
+  reader.readAsText(file);
+}
+function showConfirm(title,lines,onOk){
+  var old=document.getElementById('_cs');if(old)old.remove();
+  var sheet=document.createElement('div');sheet.id='_cs';sheet.style.cssText='position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.62);display:flex;align-items:flex-end;justify-content:center';
+  var box=document.createElement('div');box.style.cssText='background:#fff;border-radius:22px 22px 0 0;padding:28px 24px 38px;width:100%;max-width:540px';
+  var lh='';for(var i=0;i<lines.length;i++)lh+='<div style="padding:3px 0;font-size:14px;color:#374151">'+esc(lines[i])+'</div>';
+  box.innerHTML='<div style="font-size:20px;font-weight:800;color:#0f172a;margin-bottom:14px">'+esc(title)+'</div><div style="margin-bottom:22px;background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:14px 16px">'+lh+'</div><div style="display:flex;gap:10px"><button id="_csC" style="flex:1;padding:15px;border:1.5px solid #e2e8f0;border-radius:12px;background:#fff;font-family:Inter,sans-serif;font-size:15px;font-weight:700;cursor:pointer;color:#374151">Cancel</button><button id="_csO" style="flex:1;padding:15px;border:none;border-radius:12px;background:linear-gradient(135deg,#ef4444,#b91c1c);color:#fff;font-family:Inter,sans-serif;font-size:15px;font-weight:700;cursor:pointer">Yes, Restore</button></div>';
+  sheet.appendChild(box);document.body.appendChild(sheet);
+  function close(){sheet.remove();}
+  document.getElementById('_csC').onclick=close;
+  document.getElementById('_csO').onclick=function(){close();onOk();};
+  sheet.addEventListener('click',function(e){if(e.target===sheet)close();});
+}
+
+/* ── ITEM 6: Keyboard awareness — dims only .scroll cards ── */
+(function(){
+  var vv=window.visualViewport;if(!vv)return;
+  var kbOpen=false,raf=null,scroll=null;
+  function getScroll(){return document.getElementById('mainScroll');}
+  function onChange(){
+    var kbH=Math.max(0,window.innerHeight-vv.height-vv.offsetTop),open=kbH>80;
+    scroll=getScroll();
+    if(scroll)scroll.style.paddingBottom=(28+kbH)+'px';
+    if(open&&!kbOpen){kbOpen=true;if(scroll)scroll.classList.add('kb-active');scrollFocused();}
+    else if(!open&&kbOpen){kbOpen=false;setTimeout(function(){if(scroll)scroll.classList.remove('kb-active');clearFocus();if(scroll)scroll.style.paddingBottom='28px';},280);}
+    else if(open)scrollFocused();
+  }
+  function scrollFocused(){
+    var f=document.activeElement;if(!f||f===document.body)return;
+    clearFocus();var card=f;while(card&&!card.classList.contains('card'))card=card.parentElement;
+    if(card)card.classList.add('kb-focus');
+    if(raf)cancelAnimationFrame(raf);
+    raf=requestAnimationFrame(function(){
+      var rect=f.getBoundingClientRect(),visB=vv.height+vv.offsetTop;
+      if(rect.bottom+20>visB){var s=getScroll();if(s)s.scrollBy({top:rect.bottom+20-visB,behavior:'smooth'});}
     });
-  });
-  return [...new Set(names)];
-}
+  }
+  function clearFocus(){var fc=document.querySelectorAll('.card.kb-focus');for(var i=0;i<fc.length;i++)fc[i].classList.remove('kb-focus');}
+  vv.addEventListener('resize',onChange);vv.addEventListener('scroll',onChange);
+  document.addEventListener('focusin',function(e){if(e.target.tagName==='INPUT'||e.target.tagName==='SELECT')setTimeout(scrollFocused,150);});
+})();
 
-function filterNames(names, input){
-  const q = input.toLowerCase();
-  return names
-    .filter(n => n.toLowerCase().includes(q))
-    .sort((a,b) => {
-      const as = a.toLowerCase().startsWith(q);
-      const bs = b.toLowerCase().startsWith(q);
-      if(as && !bs) return -1;
-      if(!as && bs)  return  1;
-      return a.localeCompare(b);
-    })
-    .slice(0, 7);
-}
+/* ── INIT ── */
+window.onload = function() {
+  var now = new Date();
 
-function esc(s){ return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;"); }
+  /* Topbar date */
+  var td=document.getElementById('topbarDate');
+  if(td) td.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-function highlight(name, input){
-  const idx = name.toLowerCase().indexOf(input.toLowerCase());
-  if(idx === -1) return esc(name);
-  return esc(name.slice(0, idx))
-       + "<mark>" + esc(name.slice(idx, idx+input.length)) + "</mark>"
-       + esc(name.slice(idx+input.length));
-}
+  /* ITEM 1: Date chip */
+  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
+  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  var chipDay=document.getElementById('chipDay'),chipNum=document.getElementById('chipNum'),chipMon=document.getElementById('chipMon');
+  if(chipDay) chipDay.textContent=days[now.getDay()];
+  if(chipNum) chipNum.textContent=now.getDate();
+  if(chipMon) chipMon.textContent=months[now.getMonth()]+' '+now.getFullYear();
 
-function closeAllSuggestions(){
-  document.querySelectorAll(".suggestions").forEach(b => b.classList.remove("open"));
-}
-
-function setupSuggestion(inputId, boxId, type, onSelect){
-  const input = document.getElementById(inputId);
-  const box   = document.getElementById(boxId);
-  if(!input || !box) return;
-
-  input.addEventListener("input", () => {
-    const val = input.value.trim();
-    box.innerHTML=""; box.classList.remove("open");
-    if(!val) return;
-
-    const matches = filterNames(getAllNames(type), val);
-    if(!matches.length) return;
-
-    matches.forEach(name => {
-      const div = document.createElement("div");
-      div.className = "sug-item";
-      div.innerHTML = highlight(name, val);
-
-      function pick(e){
-        e.preventDefault();
-        input.value = name;
-        input.dispatchEvent(new Event("input", {bubbles:true}));
-        if(typeof onSelect === "function") onSelect(name);
-        box.classList.remove("open");
-        box.innerHTML = "";
-      }
-      div.addEventListener("mousedown", pick);
-      div.addEventListener("touchend",  pick, {passive:false});
-      box.appendChild(div);
-    });
-
-    box.classList.add("open");
-  });
-
-  input.addEventListener("blur", () => {
-    setTimeout(() => box.classList.remove("open"), 220);
-  });
-}
-
-/* ═══════════════════════════════════════════
-   DRAW GI ICON — reuses the canvas built in
-   the <head> script, no duplicate drawing
-═══════════════════════════════════════════ */
-function drawGiOnCanvas(targetCanvas, size){
-  const src = buildGiIcon(size);
-  const ctx = targetCanvas.getContext('2d');
-  ctx.drawImage(src, 0, 0);
-}
-
-/* ═══════════════════════════════════════════
-   INIT
-═══════════════════════════════════════════ */
-window.onload = () => {
+  /* Att subtitle */
+  var as=document.getElementById('attSub');
+  if(as) as.textContent='Recording for '+now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
 
   /* Date fields */
-  const attDate = document.getElementById("attendanceDate");
-  const payRep  = document.getElementById("paymentReportMonth");
-  if(attDate) attDate.value = today();
-  if(payRep)  payRep.value  = thisMonth();
+  var ad=document.getElementById('attendanceDate'),pm=document.getElementById('paymentMonth');
+  if(ad) ad.value=today();
+  if(pm) pm.value=thisMonth();
 
-  loadPaymentMonths();
-  loadAttendanceReport();
-  loadPaymentReport();
+  /* Parent → signature */
+  var pIn=document.getElementById('parentIn');
+  if(pIn) pIn.addEventListener('input',function(){setSig(this.value);});
+
+  loadPayMonths();
+  loadAttReport();
+  loadPayReport();
+  renderBkHistory();
+  updateNavBadge();
+  updateMonthSummary();
 
   /* Autocomplete */
-  setupSuggestion("studentIn",  "studentInSuggest",  "student");
-  setupSuggestion("parentIn",   "parentInSuggest",   "parent", setSignatureFrom);
-  setupSuggestion("studentOut", "studentOutSuggest", "student");
-  setupSuggestion("payStudent", "payStudentSuggest", "student");
-  setupSuggestion("payParent",  "payParentSuggest",  "parent");
+  setupSug('studentIn','studentInSuggest','student');
+  setupSug('parentIn','parentInSuggest','parent',setSig);
+  setupSug('studentOut','studentOutSuggest','student');
+  setupSug('payStudent','payStudentSuggest','student');
+  setupSug('payParent','payParentSuggest','parent');
 
-  /* Sidebar brand icon — reuse the pre-built canvas */
-  const wrap = document.getElementById("brandIconWrap");
-  if(wrap && window._iconPNG){
-    const img = new Image();
-    img.src = window._iconPNG.png192;
-    img.style.cssText = "width:100%;height:100%;display:block;border-radius:10px;";
-    wrap.appendChild(img);
-  }
+  /* ITEM 2: Attach validation listeners */
+  attachValidation('studentIn',true);
+  attachValidation('parentIn',true);
+  attachValidation('studentOut',true);
+  attachValidation('payStudent',true);
+  attachValidation('payParent',true);
+  attachValidation('payAmount',true);
 
-  /* Splash canvas */
-  const splashC = document.getElementById("splash-canvas");
-  if(splashC){
-    const src = buildGiIcon(280);
-    splashC.getContext('2d').drawImage(src, 0, 0);
-  }
+  /* Brand icon */
+  var wrap=document.getElementById('brandIconWrap');
+  if(wrap&&window._iconPNG){var img=new Image();img.src=window._iconPNG.png192;img.style.cssText='width:100%;height:100%;display:block;border-radius:10px;';wrap.appendChild(img);}
 
-  /* Dismiss splash */
-  setTimeout(() => {
-    const s = document.getElementById("splash");
-    if(s) s.classList.add("hidden");
-  }, 1600);
+  /* Splash */
+  var sc=document.getElementById('splash-canvas');
+  if(sc){try{var src=buildGiIcon(256);sc.getContext('2d').drawImage(src,0,0);}catch(e){console.warn('Splash:',e);}}
+  setTimeout(function(){var sp=document.getElementById('splash');if(sp)sp.classList.add('hidden');},1700);
 };
 </script>
 </body>
