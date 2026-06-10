@@ -189,17 +189,48 @@ body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); f
 
 /* ── CARD ── */
 .card { background:var(--pg-card); border:1px solid var(--pg-border); border-radius:var(--radius-lg); padding:26px; margin-bottom:22px; box-shadow:0 1px 3px rgba(15,23,42,.05),0 6px 24px rgba(15,23,42,.04); position:relative; transition:box-shadow var(--ease); }
-/* ITEM 3: Check-In card gets amber accent top bar */
-#cardCheckIn { border-top: 3px solid var(--amber); }
-#cardCheckOut { border-top: 3px solid var(--red); }
 .card:focus-within { box-shadow:0 1px 3px rgba(15,23,42,.05),0 6px 24px rgba(15,23,42,.07),0 0 0 3px rgba(245,158,11,.1); }
+
+/* ── ATTENDANCE CARDS — enhanced visual header ── */
+#cardCheckIn,
+#cardCheckOut { padding:0; }
+
+/* Coloured header band */
+.att-card-header {
+  display:flex; align-items:center; gap:14px;
+  padding:16px 20px 14px;
+  border-bottom:1px solid var(--pg-border);
+  position:relative; overflow:hidden;
+}
+/* Subtle diagonal stripe on the band */
+.att-card-header::before {
+  content:''; position:absolute; inset:0; pointer-events:none;
+  background-image:repeating-linear-gradient(-55deg,transparent,transparent 8px,rgba(255,255,255,.05) 8px,rgba(255,255,255,.05) 9px);
+}
+#cardCheckIn  .att-card-header { background:linear-gradient(135deg,rgba(245,158,11,.13),rgba(245,158,11,.04)); }
+#cardCheckOut .att-card-header { background:linear-gradient(135deg,rgba(239,68,68,.1),rgba(239,68,68,.03)); }
+
+.att-card-icon {
+  width:44px; height:44px; border-radius:13px;
+  display:flex; align-items:center; justify-content:center;
+  font-size:22px; flex-shrink:0; position:relative; z-index:1;
+}
+#cardCheckIn  .att-card-icon { background:rgba(245,158,11,.18); box-shadow:0 2px 10px rgba(245,158,11,.22); }
+#cardCheckOut .att-card-icon { background:rgba(239,68,68,.14);  box-shadow:0 2px 10px rgba(239,68,68,.16); }
+
+.att-card-title { flex:1; position:relative; z-index:1; }
+.att-card-title h2 { font-size:17px; font-weight:800; color:var(--pg-text); letter-spacing:-.3px; line-height:1; margin:0; }
+.att-card-title p  { font-size:11px; font-weight:600; color:var(--pg-text3); margin-top:3px; letter-spacing:.2px; }
+.att-card-pill { position:relative; z-index:1; }
+
+/* Body padding restored inside the card */
+.att-card-body { padding:16px 20px 14px; }
+
+/* General card header (non-attendance cards) */
 .card-hd { display:flex; align-items:center; gap:12px; margin-bottom:22px; padding-bottom:18px; border-bottom:1px solid var(--pg-border); }
 .card-hd-icon { width:42px; height:42px; border-radius:12px; display:flex; align-items:center; justify-content:center; font-size:20px; flex-shrink:0; }
 .chi-amber{background:rgba(245,158,11,.1)} .chi-red{background:rgba(239,68,68,.1)} .chi-green{background:rgba(16,185,129,.1)} .chi-blue{background:rgba(59,130,246,.1)} .chi-purple{background:rgba(139,92,246,.1)}
 .card-hd-title { font-size:17px; font-weight:700; color:var(--pg-text); flex:1; }
-
-/* ITEM 3: Check-In card header text is bigger */
-#cardCheckIn .card-hd-title { font-size:20px; }
 
 .pill { display:inline-flex; align-items:center; font-size:11px; font-weight:700; letter-spacing:.6px; text-transform:uppercase; padding:4px 11px; border-radius:20px; }
 .pill-green  { background:rgba(16,185,129,.1); color:#059669; border:1px solid rgba(16,185,129,.22); }
@@ -270,7 +301,16 @@ body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); f
 /* Arrow span inside action buttons */
 .btn-arrow { display:inline-flex; align-items:center; flex-shrink:0; opacity:.85; }
 
-.pay-save-wrap { position:sticky; bottom:20px; z-index:50; margin-top:10px; filter:drop-shadow(0 6px 18px rgba(0,0,0,.14)); }
+.pay-save-wrap {
+  position: sticky;
+  bottom: 20px;
+  z-index: 50;
+  margin-top: 0;
+  padding: 10px 0 0;
+  /* Frosted background so it lifts cleanly above scrolled content */
+  background: linear-gradient(to bottom, transparent, var(--pg-bg) 40%);
+  filter: drop-shadow(0 -2px 12px rgba(0,0,0,.06));
+}
 
 /* ── TABLES ── */
 .table-wrap { overflow-x:auto; border-radius:var(--radius); border:1px solid var(--pg-border); margin-bottom:18px; background:#fff; }
@@ -370,6 +410,11 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
   html,body{font-size:16px}
   .scroll{padding:24px 28px}
   .card{padding:28px}
+  /* Attendance cards get more breathing room on Galaxy Tab */
+  .att-card-header{padding:20px 26px 18px}
+  .att-card-body{padding:20px 26px 18px}
+  .att-card-icon{width:50px;height:50px;font-size:24px;border-radius:15px}
+  .att-card-title h2{font-size:19px}
   .field input,.field select{padding:15px 18px;font-size:16px}
   .btn{padding:17px 20px;font-size:16px}
   .sug-item{padding:14px 18px;font-size:15px;min-height:52px}
@@ -505,11 +550,15 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
 
           <!-- CHECK IN -->
           <div class="card" id="cardCheckIn">
-            <div class="card-hd">
-              <div class="card-hd-icon chi-amber">📋</div>
-              <div class="card-hd-title">Check-In</div>
-              <span class="pill pill-green">● In</span>
+            <div class="att-card-header">
+              <div class="att-card-icon">📋</div>
+              <div class="att-card-title">
+                <h2>Check-In</h2>
+                <p>Record student arrival</p>
+              </div>
+              <div class="att-card-pill"><span class="pill pill-green">● In</span></div>
             </div>
+            <div class="att-card-body">
 
             <div class="field">
               <div class="field-lbl">🎓 Student Name</div>
@@ -542,7 +591,6 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
               <div id="errRelation" class="field-err">Relationship is required</div>
             </div>
 
-            <!-- ITEM 7: Signature with lock hint -->
             <div class="field sig-field">
               <div class="field-lbl">✍️ Signature</div>
               <input id="signature" placeholder="Auto-filled from parent name" readonly tabindex="-1">
@@ -552,19 +600,25 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
               </div>
             </div>
 
-            <!-- ITEM 8: Clear form button -->
             <button class="btn btn-clear" onclick="clearCheckInForm()" style="margin-top:4px">
               ✕ Clear Form
             </button>
+
+            </div><!-- /att-card-body -->
           </div>
 
           <!-- CHECK OUT -->
           <div class="card" id="cardCheckOut">
-            <div class="card-hd">
-              <div class="card-hd-icon chi-red">🚪</div>
-              <div class="card-hd-title">Check-Out</div>
-              <span class="pill pill-red">● Out</span>
+            <div class="att-card-header">
+              <div class="att-card-icon">🚪</div>
+              <div class="att-card-title">
+                <h2>Check-Out</h2>
+                <p>Record student departure</p>
+              </div>
+              <div class="att-card-pill"><span class="pill pill-red">● Out</span></div>
             </div>
+            <div class="att-card-body">
+
             <div class="field">
               <div class="field-lbl">🎓 Student Name</div>
               <input id="studentOut" placeholder="Type or search student…"
@@ -576,6 +630,8 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
             <div class="info-box">
               ℹ️ Select the student leaving. Departure time is recorded automatically.
             </div>
+
+            </div><!-- /att-card-body -->
           </div>
 
         </div>
@@ -603,7 +659,7 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
           <p>Log tuition and fee collections</p>
         </div>
 
-        <div class="card" style="max-width:640px">
+        <div class="card" style="max-width:640px;margin-left:auto;margin-right:auto">
           <div class="card-hd">
             <div class="card-hd-icon chi-blue">💳</div>
             <div class="card-hd-title">Payment Details</div>
@@ -649,9 +705,11 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
             <div class="field-lbl">📅 For Month</div>
             <div class="sel-wrap"><select id="payMonth"></select></div>
           </div>
-          <div class="pay-save-wrap">
-            <button class="btn btn-primary" id="btnSavePay" onclick="savePayment()">💳 Save Payment</button>
-          </div>
+        </div><!-- /card -->
+
+        <!-- Sticky save button outside the card so position:sticky works -->
+        <div class="pay-save-wrap" style="max-width:640px;margin-left:auto;margin-right:auto">
+          <button class="btn btn-primary" id="btnSavePay" onclick="savePayment()">💳 Save Payment</button>
         </div>
       </div>
 
