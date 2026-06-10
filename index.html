@@ -180,43 +180,12 @@ body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); f
 .page { display:none; }
 .page.active { display:block; }
 
-/* ── ITEM 1: Attendance page date header ── */
-.att-header {
-  display: flex; align-items: center; justify-content: space-between;
-  margin-bottom: 22px; flex-wrap: wrap; gap: 12px;
-}
-.att-header h1 { font-size:28px; font-weight:800; color:var(--pg-text); }
-.att-header p  { font-size:14px; color:var(--pg-text3); margin-top:3px; }
-.date-chip {
-  display: flex; align-items: center; gap: 10px;
-  background: var(--dk-surface); border:1px solid var(--dk-border);
-  border-radius: var(--radius-lg); padding: 12px 18px;
-  flex-shrink: 0;
-}
-.date-chip-day  { font-size:11px; font-weight:700; color:var(--amber); letter-spacing:1.5px; text-transform:uppercase; }
-.date-chip-num  { font-size:32px; font-weight:800; color:var(--dk-text); line-height:1; }
-.date-chip-mon  { font-size:12px; font-weight:600; color:var(--dk-text2); margin-top:1px; }
-
 .pg-intro { margin-bottom:26px; }
 .pg-intro h1 { font-size:28px; font-weight:800; color:var(--pg-text); }
 .pg-intro p  { font-size:14px; color:var(--pg-text3); margin-top:5px; }
 
 /* ── ITEM 3: Check-In card dominates — 2fr vs 1fr ── */
 .att-grid { display:grid; grid-template-columns:2fr 1fr; gap:20px; }
-
-/* ── ITEM 5: Month summary strip on payments page ── */
-.month-summary {
-  display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap;
-}
-.ms-chip {
-  flex: 1; min-width: 130px;
-  background: var(--dk-surface); border: 1px solid var(--dk-border);
-  border-radius: var(--radius-lg); padding: 14px 18px;
-  display: flex; align-items: center; gap: 12px;
-}
-.ms-icon { font-size: 22px; flex-shrink: 0; }
-.ms-val  { font-size: 22px; font-weight: 800; color: var(--dk-text); line-height: 1; }
-.ms-lbl  { font-size: 11px; font-weight: 600; color: var(--dk-text2); text-transform: uppercase; letter-spacing: .8px; margin-top: 2px; }
 
 /* ── CARD ── */
 .card { background:var(--pg-card); border:1px solid var(--pg-border); border-radius:var(--radius-lg); padding:26px; margin-bottom:22px; box-shadow:0 1px 3px rgba(15,23,42,.05),0 6px 24px rgba(15,23,42,.04); position:relative; transition:box-shadow var(--ease); }
@@ -298,6 +267,8 @@ body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); f
 
 .action-strip { display:flex; gap:12px; position:sticky; bottom:20px; z-index:50; margin-top:8px; }
 .action-strip .btn { flex:1; margin-top:0; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.14); }
+/* Arrow span inside action buttons */
+.btn-arrow { display:inline-flex; align-items:center; flex-shrink:0; opacity:.85; }
 
 .pay-save-wrap { position:sticky; bottom:20px; z-index:50; margin-top:10px; filter:drop-shadow(0 6px 18px rgba(0,0,0,.14)); }
 
@@ -358,12 +329,25 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
 .success-overlay.show{opacity:1;pointer-events:auto}
 .success-card { background:#1c2333; border:1px solid var(--dk-border2); border-radius:28px; padding:40px 38px; text-align:center; transform:scale(.65); transition:transform .32s cubic-bezier(.34,1.56,.64,1); min-width:268px; box-shadow:0 28px 80px rgba(0,0,0,.45); }
 .success-overlay.show .success-card{transform:scale(1)}
-.check-svg{display:block;margin:0 auto 20px;width:88px;height:88px}
-.check-circle{fill:none;stroke:var(--green);stroke-width:3.5;stroke-linecap:round;stroke-dasharray:251;stroke-dashoffset:251}
-.check-tick  {fill:none;stroke:var(--green);stroke-width:5;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:52;stroke-dashoffset:52}
-.success-overlay.show .check-circle{animation:drawC .55s ease-out forwards}
-.success-overlay.show .check-tick  {animation:drawT .35s ease-out .5s forwards}
-@keyframes drawC{to{stroke-dashoffset:0}} @keyframes drawT{to{stroke-dashoffset:0}}
+.check-svg { display:block; margin:0 auto 20px; width:88px; height:88px; }
+/* Clipboard body draws in */
+.clip-body  { fill:none; stroke:#94a3b8; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:260; stroke-dashoffset:260; }
+/* Clipboard clip at top draws in */
+.clip-top   { fill:none; stroke:#94a3b8; stroke-width:3; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:40; stroke-dashoffset:40; }
+/* Three check-lines write in one by one */
+.clip-line1 { fill:none; stroke:var(--amber); stroke-width:3.5; stroke-linecap:round; stroke-dasharray:28; stroke-dashoffset:28; }
+.clip-line2 { fill:none; stroke:var(--amber); stroke-width:3.5; stroke-linecap:round; stroke-dasharray:22; stroke-dashoffset:22; }
+.clip-line3 { fill:none; stroke:var(--amber); stroke-width:3.5; stroke-linecap:round; stroke-dasharray:16; stroke-dashoffset:16; }
+/* Tick mark on last line */
+.clip-tick  { fill:none; stroke:var(--green); stroke-width:4; stroke-linecap:round; stroke-linejoin:round; stroke-dasharray:30; stroke-dashoffset:30; }
+
+.success-overlay.show .clip-body  { animation: clipDraw .45s ease-out          forwards; }
+.success-overlay.show .clip-top   { animation: clipDraw .25s ease-out .1s       forwards; }
+.success-overlay.show .clip-line1 { animation: clipDraw .22s ease-out .5s       forwards; }
+.success-overlay.show .clip-line2 { animation: clipDraw .22s ease-out .68s      forwards; }
+.success-overlay.show .clip-line3 { animation: clipDraw .18s ease-out .86s      forwards; }
+.success-overlay.show .clip-tick  { animation: clipDraw .28s ease-out 1.0s      forwards; }
+@keyframes clipDraw { to { stroke-dashoffset: 0; } }
 .success-msg{font-size:18px;font-weight:800;color:var(--dk-text);opacity:0;transform:translateY(8px);transition:opacity .3s ease .75s,transform .3s ease .75s}
 .success-overlay.show .success-msg{opacity:1;transform:translateY(0)}
 
@@ -393,8 +377,6 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
   tbody td{font-size:14px;padding:14px 16px}
   .action-strip .btn{padding:18px;font-size:16px}
   .sc-val{font-size:26px}
-  .date-chip-num{font-size:38px}
-  .ms-val{font-size:26px}
 }
 
 /* ── TABLET 1024px ── */
@@ -424,10 +406,7 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
   .att-grid{grid-template-columns:1fr}
   .grid-2{grid-template-columns:1fr}
   .app-footer{font-size:11px;gap:6px}
-  .pg-intro h1,.att-header h1{font-size:22px}
-  .date-chip{padding:10px 14px}
-  .date-chip-num{font-size:26px}
-  .month-summary{gap:8px}
+  .pg-intro h1{font-size:22px}
 }
 
 @media (pointer:coarse) {
@@ -450,9 +429,20 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
 <!-- SUCCESS -->
 <div id="successOverlay" class="success-overlay">
   <div class="success-card">
-    <svg class="check-svg" viewBox="0 0 90 90">
-      <circle class="check-circle" cx="45" cy="45" r="38" transform="rotate(-90 45 45)"/>
-      <polyline class="check-tick" points="22,46 37,62 68,28"/>
+    <!-- Animated clipboard: body draws in, then three lines write, then tick appears -->
+    <svg class="check-svg" viewBox="0 0 90 90" xmlns="http://www.w3.org/2000/svg">
+      <!-- Clipboard body (rounded rect) -->
+      <rect class="clip-body" x="18" y="22" width="54" height="60" rx="6"/>
+      <!-- Clip at top -->
+      <path class="clip-top" d="M34 22 v-5 a4 4 0 0 1 4-4 h14 a4 4 0 0 1 4 4 v5"/>
+      <!-- Line 1 -->
+      <line class="clip-line1" x1="28" y1="44" x2="56" y2="44"/>
+      <!-- Line 2 -->
+      <line class="clip-line2" x1="28" y1="55" x2="50" y2="55"/>
+      <!-- Line 3 -->
+      <line class="clip-line3" x1="28" y1="66" x2="44" y2="66"/>
+      <!-- Tick (written on line 3 area, confirming entry) -->
+      <polyline class="clip-tick" points="50,59 56,67 68,50"/>
     </svg>
     <div id="successMsg" class="success-msg">Done</div>
   </div>
@@ -504,19 +494,10 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
       <!-- ── ATTENDANCE ── -->
       <div id="attendance" class="page active">
 
-        <!-- ITEM 1: Date chip header -->
-        <div class="att-header">
-          <div>
-            <h1>Attendance</h1>
-            <p id="attSub">Recording for today</p>
-          </div>
-          <div class="date-chip">
-            <div>
-              <div class="date-chip-day" id="chipDay"></div>
-              <div class="date-chip-num" id="chipNum"></div>
-              <div class="date-chip-mon" id="chipMon"></div>
-            </div>
-          </div>
+        <!-- Attendance header -->
+        <div class="pg-intro">
+          <h1>Attendance</h1>
+          <p id="attSub">Recording for today</p>
         </div>
 
         <!-- ITEM 3: 2fr / 1fr grid -->
@@ -600,8 +581,18 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
         </div>
 
         <div class="action-strip">
-          <button class="btn btn-primary" id="btnCheckIn"  onclick="handleCheckIn()">📋Check In</button>
-          <button class="btn btn-danger"  id="btnCheckOut" onclick="handleCheckOut()">🚪 Check Out</button>
+          <button class="btn btn-primary" id="btnCheckIn" onclick="handleCheckIn()">
+            <span id="arrowCheckIn" class="btn-arrow" style="display:none">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline id="arrowCheckInPoly" points="3,11 8,5 13,11"/></svg>
+            </span>
+            📋 Check In
+          </button>
+          <button class="btn btn-danger" id="btnCheckOut" onclick="handleCheckOut()">
+            <span id="arrowCheckOut" class="btn-arrow">
+              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline id="arrowCheckOutPoly" points="3,5 8,11 13,5"/></svg>
+            </span>
+            🚪 Check Out
+          </button>
         </div>
       </div>
 
@@ -611,9 +602,6 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
           <h1>Record Payment</h1>
           <p>Log tuition and fee collections</p>
         </div>
-
-        <!-- ITEM 5: Month summary -->
-        <div class="month-summary" id="monthSummary"></div>
 
         <div class="card" style="max-width:640px">
           <div class="card-hd">
@@ -755,7 +743,6 @@ function showPage(id, btn) {
   var t = document.getElementById('topbarTitle');
   if (t) t.textContent = PAGE_TITLES[id] || id;
   if (id === 'reports') { loadAttReport(); loadPayReport(); renderBkHistory(); }
-  if (id === 'payments') { updateMonthSummary(); }
 }
 
 /* ── Date helpers ── */
@@ -901,25 +888,6 @@ function loadPayMonths() {
   }
 }
 
-/* ── ITEM 5: Month summary ── */
-function updateMonthSummary() {
-  var el = document.getElementById('monthSummary'); if (!el) return;
-  var sel = document.getElementById('payMonth');
-  var month = sel ? sel.value : thisMonth();
-  var payments = getPay();
-  var count = 0, total = 0;
-  for (var i = 0; i < payments.length; i++) {
-    if (payments[i].month === month) { count++; total += parseFloat(payments[i].amount) || 0; }
-  }
-  var attData = getAtt(today());
-  var unpaid = 0;
-  for (var j = 0; j < attData.length; j++) { if (attData[j].fee === 'UNPAID') unpaid++; }
-  el.innerHTML =
-    '<div class="ms-chip"><span class="ms-icon">💰</span><div><div class="ms-val" style="color:var(--green)">$' + total.toFixed(2) + '</div><div class="ms-lbl">Collected ' + (month||'this month') + '</div></div></div>' +
-    '<div class="ms-chip"><span class="ms-icon">📋</span><div><div class="ms-val">' + count + '</div><div class="ms-lbl">Payments recorded</div></div></div>' +
-    (unpaid > 0 ? '<div class="ms-chip"><span class="ms-icon">⚠️</span><div><div class="ms-val" style="color:var(--red)">' + unpaid + '</div><div class="ms-lbl">Unpaid today</div></div></div>' : '');
-}
-
 /* ── ITEM 8: Clear form ── */
 function clearCheckInForm() {
   var ids = ['studentIn','parentIn','signature'];
@@ -952,16 +920,59 @@ function scrollToCard(cardId) {
 function setBtnLoading(id, loading) {
   var btn = document.getElementById(id); if (!btn) return;
   btn.disabled = loading;
-  if (loading) btn.setAttribute('data-orig', btn.textContent);
-  else { var orig = btn.getAttribute('data-orig'); if (orig) btn.textContent = orig; }
+  if (loading) {
+    btn.setAttribute('data-orig-html', btn.innerHTML);
+  } else {
+    var orig = btn.getAttribute('data-orig-html');
+    if (orig) btn.innerHTML = orig;
+  }
 }
 
 /* ── Check In ── */
+/* ── Arrow state controller ──
+   state: 'initial' = no arrow on checkIn, ↓ on checkOut
+          'at-checkout' = ↑ on checkIn, no arrow on checkOut
+*/
+var _arrowState = 'initial';
+
+function setArrows(state) {
+  _arrowState = state;
+  var arrowIn  = document.getElementById('arrowCheckIn');
+  var arrowOut = document.getElementById('arrowCheckOut');
+  var polyIn   = document.getElementById('arrowCheckInPoly');
+  var polyOut  = document.getElementById('arrowCheckOutPoly');
+  if (!arrowIn || !arrowOut) return;
+
+  if (state === 'initial') {
+    /* At check-in: hide arrow on Check In, show ↓ on Check Out */
+    arrowIn.style.display  = 'none';
+    arrowOut.style.display = 'inline-flex';
+    if (polyOut) polyOut.setAttribute('points','3,5 8,11 13,5'); /* ↓ */
+  } else if (state === 'at-checkout') {
+    /* At check-out: show ↑ on Check In, hide arrow on Check Out */
+    arrowIn.style.display  = 'inline-flex';
+    arrowOut.style.display = 'none';
+    if (polyIn) polyIn.setAttribute('points','3,11 8,5 13,11'); /* ↑ */
+  }
+}
+
 function handleCheckIn() {
   scrollToCard('cardCheckIn');
+  /* After navigating to check-in: no arrow on checkIn, ↓ on checkOut */
+  setArrows('initial');
   setBtnLoading('btnCheckIn', true);
-  setTimeout(function(){ checkIn(); setBtnLoading('btnCheckIn', false); }, 50);
+  setTimeout(function() { checkIn(); setBtnLoading('btnCheckIn', false); }, 50);
 }
+
+function handleCheckOut() {
+  scrollToCard('cardCheckOut');
+  /* After navigating to check-out: ↑ on checkIn, no arrow on checkOut */
+  setArrows('at-checkout');
+  setBtnLoading('btnCheckOut', true);
+  setTimeout(function() { checkOut(); setBtnLoading('btnCheckOut', false); }, 50);
+}
+
+/* ── Check In ── */
 function checkIn() {
   var sIn = document.getElementById('studentIn');
   var pIn = document.getElementById('parentIn');
@@ -987,15 +998,11 @@ function checkIn() {
   saveAtt(date, data);
   clearCheckInForm();
   loadAttReport();
+  setArrows('initial');
   showSuccess('Checked In Successfully');
 }
 
 /* ── Check Out ── */
-function handleCheckOut() {
-  scrollToCard('cardCheckOut');
-  setBtnLoading('btnCheckOut', true);
-  setTimeout(function(){ checkOut(); setBtnLoading('btnCheckOut', false); }, 50);
-}
 function checkOut() {
   var sOut = document.getElementById('studentOut');
   if (!sOut.value.trim()) { setErr('errStudentOut',true); return; }
@@ -1016,6 +1023,7 @@ function checkOut() {
   saveAtt(date, data);
   sOut.value=''; sOut.classList.remove('valid','invalid');
   closeAllSug(); loadAttReport();
+  setArrows('initial');
   showSuccess('Checked Out Successfully');
 }
 
@@ -1041,7 +1049,7 @@ function savePayment() {
   }
   pStu.value=''; pPar.value=''; pAmt.value='';
   [pStu,pPar,pAmt].forEach(function(el){el.classList.remove('valid','invalid');});
-  closeAllSug(); loadPayReport(); loadAttReport(); updateMonthSummary();
+  closeAllSug(); loadPayReport(); loadAttReport();
   showSuccess('Payment Saved');
 }
 
@@ -1186,14 +1194,6 @@ window.onload = function() {
   var td=document.getElementById('topbarDate');
   if(td) td.textContent=now.toLocaleDateString('en-US',{weekday:'long',year:'numeric',month:'long',day:'numeric'});
 
-  /* ITEM 1: Date chip */
-  var days=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'];
-  var months=['January','February','March','April','May','June','July','August','September','October','November','December'];
-  var chipDay=document.getElementById('chipDay'),chipNum=document.getElementById('chipNum'),chipMon=document.getElementById('chipMon');
-  if(chipDay) chipDay.textContent=days[now.getDay()];
-  if(chipNum) chipNum.textContent=now.getDate();
-  if(chipMon) chipMon.textContent=months[now.getMonth()]+' '+now.getFullYear();
-
   /* Att subtitle */
   var as=document.getElementById('attSub');
   if(as) as.textContent='Recording for '+now.toLocaleDateString('en-US',{weekday:'long',month:'long',day:'numeric'});
@@ -1212,7 +1212,7 @@ window.onload = function() {
   loadPayReport();
   renderBkHistory();
   updateNavBadge();
-  updateMonthSummary();
+  setArrows('initial');
 
   /* Autocomplete */
   setupSug('studentIn','studentInSuggest','student');
