@@ -296,9 +296,7 @@ body { width:100%; height:100%; background:var(--dk-bg); color:var(--dk-text); f
 .btn-clear { background:transparent; color:var(--pg-text3); border:1.5px solid var(--pg-border); box-shadow:none; font-size:13px; padding:10px 16px; }
 .btn-clear:hover { background:#fff5f5; border-color:#fca5a5; color:var(--red); }
 
-.action-strip { display:flex; gap:12px; position:sticky; bottom:20px; z-index:50; margin-top:8px; }
-.action-strip .btn { flex:1; margin-top:0; padding:16px; box-shadow:0 6px 20px rgba(0,0,0,.14); }
-/* Arrow span inside action buttons */
+/* Arrow span */
 .btn-arrow { display:inline-flex; align-items:center; flex-shrink:0; opacity:.85; }
 
 .pay-save-wrap {
@@ -420,7 +418,6 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
   .sug-item{padding:14px 18px;font-size:15px;min-height:52px}
   thead th{padding:14px 16px}
   tbody td{font-size:14px;padding:14px 16px}
-  .action-strip .btn{padding:18px;font-size:16px}
   .sc-val{font-size:26px}
 }
 
@@ -459,6 +456,16 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
   #cardCheckOut .field input,
   #payments .field input,#payments .field select { font-size:16px; }
 }
+/* Delete button in table rows */
+.del-btn {
+  padding: 5px 11px; font-size: 12px; font-weight: 700;
+  border: 1px solid rgba(239,68,68,.25); border-radius: 8px;
+  background: rgba(239,68,68,.07); color: var(--red);
+  cursor: pointer; font-family: 'Inter', sans-serif;
+  transition: all .15s; white-space: nowrap;
+}
+.del-btn:hover { background: var(--red); color: #fff; border-color: var(--red); }
+
 </style>
 </head>
 <body>
@@ -604,6 +611,10 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
               ✕ Clear Form
             </button>
 
+            <button class="btn btn-primary" id="btnCheckIn" onclick="handleCheckIn()" style="margin-top:12px">
+              📋 Check In
+            </button>
+
             </div><!-- /att-card-body -->
           </div>
 
@@ -631,26 +642,16 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
               ℹ️ Select the student leaving. Departure time is recorded automatically.
             </div>
 
+            <button class="btn btn-danger" id="btnCheckOut" onclick="handleCheckOut()" style="margin-top:12px">
+              🚪 Check Out
+            </button>
+
             </div><!-- /att-card-body -->
           </div>
 
         </div>
 
-        <div class="action-strip">
-          <button class="btn btn-primary" id="btnCheckIn" onclick="handleCheckIn()">
-            <span id="arrowCheckIn" class="btn-arrow" style="display:none">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline id="arrowCheckInPoly" points="3,11 8,5 13,11"/></svg>
-            </span>
-            📋 Check In
-          </button>
-          <button class="btn btn-danger" id="btnCheckOut" onclick="handleCheckOut()">
-            <span id="arrowCheckOut" class="btn-arrow">
-              <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline id="arrowCheckOutPoly" points="3,5 8,11 13,5"/></svg>
-            </span>
-            🚪 Check Out
-          </button>
-        </div>
-      </div>
+      </div><!-- /attendance page -->
 
       <!-- ── PAYMENTS ── -->
       <div id="payments" class="page">
@@ -723,7 +724,7 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
           <div class="stat-row" id="attStats"></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Student</th><th>Status</th><th>In</th><th>Out</th><th>Parent</th><th>Relationship</th><th>Signature</th><th>Fee</th></tr></thead>
+              <thead><tr><th>Date</th><th>Student</th><th>Status</th><th>In</th><th>Out</th><th>Parent</th><th>Relationship</th><th>Signature</th><th>Fee</th><th></th></tr></thead>
               <tbody id="attendanceLog"></tbody>
             </table>
           </div>
@@ -736,7 +737,7 @@ tbody tr:hover td:first-child{border-left:3px solid var(--amber)}
           <div class="stat-row" id="payStats"></div>
           <div class="table-wrap">
             <table>
-              <thead><tr><th>Date</th><th>Student</th><th>Parent</th><th>Month</th><th>Type</th><th>Amount</th></tr></thead>
+              <thead><tr><th>Date</th><th>Student</th><th>Parent</th><th>Month</th><th>Type</th><th>Amount</th><th></th></tr></thead>
               <tbody id="paymentLog"></tbody>
             </table>
           </div>
@@ -1015,22 +1016,16 @@ function setArrows(state) {
 }
 
 function handleCheckIn() {
-  scrollToCard('cardCheckIn');
-  /* After navigating to check-in: no arrow on checkIn, ↓ on checkOut */
-  setArrows('initial');
   setBtnLoading('btnCheckIn', true);
   setTimeout(function() { checkIn(); setBtnLoading('btnCheckIn', false); }, 50);
 }
 
 function handleCheckOut() {
-  scrollToCard('cardCheckOut');
-  /* After navigating to check-out: ↑ on checkIn, no arrow on checkOut */
-  setArrows('at-checkout');
   setBtnLoading('btnCheckOut', true);
   setTimeout(function() { checkOut(); setBtnLoading('btnCheckOut', false); }, 50);
 }
 
-/* ── Check In ── */
+/* ── Check In — supports comma-separated names ── */
 function checkIn() {
   var sIn = document.getElementById('studentIn');
   var pIn = document.getElementById('parentIn');
@@ -1042,47 +1037,117 @@ function checkIn() {
   if (!pIn.value.trim()) { setErr('errParentIn',true);  pIn.classList.add('invalid'); ok=false; } else { setErr('errParentIn',false);  }
   if (!rel.value)        { setErr('errRelation',true);  rel.classList.add('invalid'); ok=false; } else { setErr('errRelation',false);  }
   if (!ok) return;
+
+  /* Split on comma — trim each name, ignore empty segments */
+  var rawNames = sIn.value.split(',');
+  var names = [];
+  for (var n = 0; n < rawNames.length; n++) {
+    var name = rawNames[n].trim();
+    if (name) names.push(name);
+  }
+  if (!names.length) { setErr('errStudentIn',true); return; }
+
   var data = getAtt(date);
-  for (var i = 0; i < data.length; i++) {
-    if (norm(data[i].student) === norm(sIn.value) && data[i].status === 'IN') {
-      showToast(sIn.value.trim() + ' is already checked in at ' + data[i].in, true); return;
+  var payments = getPay();
+  var checkedIn = [], alreadyIn = [], errors = [];
+
+  for (var ni = 0; ni < names.length; ni++) {
+    var studentName = names[ni];
+
+    /* Duplicate check */
+    var isDupe = false;
+    for (var i = 0; i < data.length; i++) {
+      if (norm(data[i].student) === norm(studentName) && data[i].status === 'IN') {
+        alreadyIn.push(studentName + ' (already in at ' + data[i].in + ')');
+        isDupe = true; break;
+      }
     }
+    if (isDupe) continue;
+
+    /* Fee check */
+    var paid = false;
+    for (var j = 0; j < payments.length; j++) {
+      if (norm(payments[j].student) === norm(studentName) && payments[j].month === date.slice(0,7)) {
+        paid = true; break;
+      }
+    }
+
+    data.push({
+      date: date, student: studentName, status: 'IN',
+      in: new Date().toLocaleTimeString(), out: '',
+      parent: pIn.value.trim(), relationship: rel.value,
+      signature: sig.value.trim(), fee: paid ? 'PAID' : 'UNPAID'
+    });
+    checkedIn.push(studentName);
   }
-  var payments = getPay(); var paid = false;
-  for (var j = 0; j < payments.length; j++) {
-    if (norm(payments[j].student)===norm(sIn.value) && payments[j].month===date.slice(0,7)) { paid=true; break; }
+
+  if (checkedIn.length > 0) {
+    saveAtt(date, data);
+    clearCheckInForm();
+    loadAttReport();
+    var msg = checkedIn.length === 1
+      ? checkedIn[0] + ' checked in'
+      : checkedIn.length + ' students checked in';
+    if (alreadyIn.length) msg += ' (' + alreadyIn.length + ' skipped — already in)';
+    showSuccess(msg);
+  } else if (alreadyIn.length) {
+    showToast(alreadyIn.join(', '), true);
   }
-  data.push({ date:date, student:sIn.value.trim(), status:'IN', in:new Date().toLocaleTimeString(), out:'', parent:pIn.value.trim(), relationship:rel.value, signature:sig.value.trim(), fee:paid?'PAID':'UNPAID' });
-  saveAtt(date, data);
-  clearCheckInForm();
-  loadAttReport();
-  setArrows('initial');
-  showSuccess('Checked In Successfully');
 }
 
-/* ── Check Out ── */
+/* ── Check Out — supports comma-separated names ── */
 function checkOut() {
   var sOut = document.getElementById('studentOut');
   if (!sOut.value.trim()) { setErr('errStudentOut',true); return; }
   setErr('errStudentOut',false);
-  var date = today(); var data = getAtt(date);
-  var rec = null, was = null;
-  for (var i = 0; i < data.length; i++) {
-    if (norm(data[i].student) === norm(sOut.value)) {
-      if (data[i].status==='IN') { rec=data[i]; break; } else was=data[i];
+
+  var date = today();
+  var data = getAtt(date);
+  var rawNames = sOut.value.split(',');
+  var names = [];
+  for (var n = 0; n < rawNames.length; n++) {
+    var name = rawNames[n].trim();
+    if (name) names.push(name);
+  }
+  if (!names.length) { setErr('errStudentOut',true); return; }
+
+  var checkedOut = [], notFound = [], alreadyOut = [];
+  var timeStr = new Date().toLocaleTimeString();
+
+  for (var ni = 0; ni < names.length; ni++) {
+    var studentName = names[ni];
+    var rec = null, was = null;
+    for (var i = 0; i < data.length; i++) {
+      if (norm(data[i].student) === norm(studentName)) {
+        if (data[i].status === 'IN') { rec = data[i]; break; }
+        else was = data[i];
+      }
+    }
+    if (rec) {
+      rec.status = 'OUT'; rec.out = timeStr;
+      checkedOut.push(studentName);
+    } else if (was) {
+      alreadyOut.push(studentName + ' (out at ' + was.out + ')');
+    } else {
+      notFound.push(studentName);
     }
   }
-  if (!rec) {
-    if (was) showToast(sOut.value.trim()+' already checked out at '+was.out, false);
-    else     showToast('No check-in found for "'+sOut.value.trim()+'" today', true);
-    sOut.value=''; closeAllSug(); return;
+
+  if (checkedOut.length > 0) {
+    saveAtt(date, data);
+    sOut.value = ''; sOut.classList.remove('valid','invalid');
+    closeAllSug(); loadAttReport(); setArrows('initial');
+    var msg = checkedOut.length === 1
+      ? checkedOut[0] + ' checked out'
+      : checkedOut.length + ' students checked out';
+    if (alreadyOut.length + notFound.length > 0)
+      msg += ' (' + (alreadyOut.length + notFound.length) + ' skipped)';
+    showSuccess(msg);
+  } else {
+    var issues = alreadyOut.concat(notFound);
+    showToast(issues.slice(0,2).join(', ') + (issues.length > 2 ? '…' : ''), true);
+    sOut.value = ''; closeAllSug();
   }
-  rec.status='OUT'; rec.out=new Date().toLocaleTimeString();
-  saveAtt(date, data);
-  sOut.value=''; sOut.classList.remove('valid','invalid');
-  closeAllSug(); loadAttReport();
-  setArrows('initial');
-  showSuccess('Checked Out Successfully');
 }
 
 /* ── Save Payment ── */
@@ -1126,9 +1191,9 @@ function loadAttReport() {
         '<div class="stat-chip"><div class="sc-val" style="color:var(--blue)">'+paidC+'</div><div class="sc-lbl">Fees Paid</div></div>';
     } else statsEl.innerHTML='';
   }
-  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="9">No attendance records for '+esc(date)+'</td></tr>';return;}
+  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="10">No attendance records for '+esc(date)+'</td></tr>';return;}
   var html='';
-  for(var k=0;k<data.length;k++){var r=data[k]; html+='<tr><td>'+esc(r.date)+'</td><td class="td-name">'+esc(r.student)+'</td><td><span class="tg tg-'+r.status.toLowerCase()+'">'+esc(r.status)+'</span></td><td>'+esc(r.in)+'</td><td>'+esc(r.out||'—')+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.relationship)+'</td><td class="td-sig">'+esc(r.signature)+'</td><td><span class="tg '+(r.fee==='PAID'?'tg-paid':'tg-unpaid')+'">'+esc(r.fee)+'</span></td></tr>';}
+  for(var k=0;k<data.length;k++){var r=data[k]; html+='<tr><td>'+esc(r.date)+'</td><td class="td-name">'+esc(r.student)+'</td><td><span class="tg tg-'+r.status.toLowerCase()+'">'+esc(r.status)+'</span></td><td>'+esc(r.in)+'</td><td>'+esc(r.out||'—')+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.relationship)+'</td><td class="td-sig">'+esc(r.signature)+'</td><td><span class="tg '+(r.fee==='PAID'?'tg-paid':'tg-unpaid')+'">'+esc(r.fee)+'</span></td><td><button class="del-btn" onclick="deleteAttEntry('+k+')">✕</button></td></tr>';}
   tbody.innerHTML=html;
 }
 function loadPayReport() {
@@ -1140,9 +1205,9 @@ function loadPayReport() {
     if(data.length>0){var total=0;for(var j=0;j<data.length;j++)total+=parseFloat(data[j].amount)||0;statsEl.innerHTML='<div class="stat-chip"><div class="sc-val">'+data.length+'</div><div class="sc-lbl">Payments</div></div><div class="stat-chip"><div class="sc-val" style="color:var(--green)">$'+total.toFixed(2)+'</div><div class="sc-lbl">Total</div></div>';}else statsEl.innerHTML='';
   }
   var tbody=document.getElementById('paymentLog'); if(!tbody)return;
-  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="6">No payment records'+(month?' for '+esc(month):'')+'</td></tr>';return;}
+  if(!data.length){tbody.innerHTML='<tr class="empty-row"><td colspan="7">No payment records'+(month?' for '+esc(month):'')+'</td></tr>';return;}
   var html='';
-  for(var k=0;k<data.length;k++){var r=data[k];html+='<tr><td>'+esc(r.paymentDate)+'</td><td class="td-name">'+esc(r.student)+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.month)+'</td><td>'+esc(r.type)+'</td><td class="td-amt">$'+esc(r.amount)+'</td></tr>';}
+  for(var k=0;k<data.length;k++){var r=data[k];html+='<tr><td>'+esc(r.paymentDate)+'</td><td class="td-name">'+esc(r.student)+'</td><td>'+esc(r.parent)+'</td><td>'+esc(r.month)+'</td><td>'+esc(r.type)+'</td><td class="td-amt">$'+esc(r.amount)+'</td><td><button class="del-btn" onclick="deletePayEntry('+k+')">✕</button></td></tr>';}
   tbody.innerHTML=html;
 }
 
@@ -1216,17 +1281,67 @@ function showConfirm(title,lines,onOk){
   sheet.addEventListener('click',function(e){if(e.target===sheet)close();});
 }
 
-/* ── ITEM 6: Keyboard awareness — dims only .scroll cards ── */
+/* ── Delete attendance entry ── */
+function deleteAttEntry(index) {
+  var dateEl = document.getElementById('attendanceDate');
+  var date = dateEl ? dateEl.value : today();
+  var data = getAtt(date);
+  if (index < 0 || index >= data.length) return;
+  var r = data[index];
+  showConfirm(
+    'Delete Entry?',
+    ['Remove this attendance record:',
+     '\u2022 ' + r.student + ' (' + r.status + ')',
+     '\u2022 ' + r.date + ' at ' + r.in],
+    function() {
+      data.splice(index, 1);
+      saveAtt(date, data);
+      loadAttReport();
+      updateNavBadge();
+      showSuccess('Entry Deleted');
+    }
+  );
+}
+
+/* ── Delete payment entry ── */
+function deletePayEntry(visIndex) {
+  var sel = document.getElementById('paymentMonth');
+  var month = sel ? sel.value : thisMonth();
+  var all = getPay();
+  /* Build filtered index map matching what loadPayReport rendered */
+  var filtered = [];
+  for (var i = 0; i < all.length; i++) {
+    if (!month || all[i].month === month) filtered.push(i);
+  }
+  if (visIndex < 0 || visIndex >= filtered.length) return;
+  var realIdx = filtered[visIndex];
+  var r = all[realIdx];
+  showConfirm(
+    'Delete Payment?',
+    ['Remove this payment record:',
+     '\u2022 ' + r.student + ' \u2014 $' + r.amount,
+     '\u2022 ' + r.paymentDate + ' (' + r.type + ')'],
+    function() {
+      all.splice(realIdx, 1);
+      savePay(all);
+      loadPayReport();
+      loadAttReport();
+      showSuccess('Payment Deleted');
+    }
+  );
+}
+
+/* ── ITEM 6: Keyboard awareness — dims only .scroll cards, pads action bar ── */
 (function(){
   var vv=window.visualViewport;if(!vv)return;
-  var kbOpen=false,raf=null,scroll=null;
+  var kbOpen=false,raf=null;
   function getScroll(){return document.getElementById('mainScroll');}
   function onChange(){
     var kbH=Math.max(0,window.innerHeight-vv.height-vv.offsetTop),open=kbH>80;
-    scroll=getScroll();
-    if(scroll)scroll.style.paddingBottom=(28+kbH)+'px';
+    var scroll=getScroll();
+    if(scroll)scroll.style.paddingBottom=(28+kbH)+'px';    if(ab) ab.style.paddingBottom=(open ? Math.max(0,kbH-10)+'px' : '');
     if(open&&!kbOpen){kbOpen=true;if(scroll)scroll.classList.add('kb-active');scrollFocused();}
-    else if(!open&&kbOpen){kbOpen=false;setTimeout(function(){if(scroll)scroll.classList.remove('kb-active');clearFocus();if(scroll)scroll.style.paddingBottom='28px';},280);}
+    else if(!open&&kbOpen){kbOpen=false;setTimeout(function(){var s=getScroll();if(s){s.classList.remove('kb-active');s.style.paddingBottom='28px';}var a=getActionBar();if(a)a.style.paddingBottom='';clearFocus();},280);}
     else if(open)scrollFocused();
   }
   function scrollFocused(){
@@ -1291,7 +1406,40 @@ window.onload = function() {
   var wrap=document.getElementById('brandIconWrap');
   if(wrap&&window._iconPNG){var img=new Image();img.src=window._iconPNG.png192;img.style.cssText='width:100%;height:100%;display:block;border-radius:10px;';wrap.appendChild(img);}
 
-  /* Splash */
+  /* Show action bar on attendance page (default) */
+
+  /* Focus dimming — dim the inactive button when user is in a specific form */
+  function setActiveSide(side) {
+    var btnIn  = document.getElementById('btnCheckIn');
+    var btnOut = document.getElementById('btnCheckOut');
+    if (!btnIn || !btnOut) return;
+    if (side === 'in') {
+      btnIn.classList.remove('dimmed');
+      btnOut.classList.add('dimmed');
+    } else if (side === 'out') {
+      btnOut.classList.remove('dimmed');
+      btnIn.classList.add('dimmed');
+    } else {
+      btnIn.classList.remove('dimmed');
+      btnOut.classList.remove('dimmed');
+    }
+  }
+  var checkInFields  = ['studentIn','parentIn','relation','signature'];
+  var checkOutFields = ['studentOut'];
+  document.addEventListener('focusin', function(e) {
+    var id = e.target && e.target.id;
+    if (checkInFields.indexOf(id) !== -1)  setActiveSide('in');
+    else if (checkOutFields.indexOf(id) !== -1) setActiveSide('out');
+  });
+  document.addEventListener('focusout', function() {
+    /* Small delay — don't reset if focus moves to another field in same form */
+    setTimeout(function() {
+      var active = document.activeElement && document.activeElement.id;
+      if (!active || (checkInFields.indexOf(active) === -1 && checkOutFields.indexOf(active) === -1)) {
+        setActiveSide('none');
+      }
+    }, 100);
+  });
   var sc=document.getElementById('splash-canvas');
   if(sc){try{var src=buildGiIcon(256);sc.getContext('2d').drawImage(src,0,0);}catch(e){console.warn('Splash:',e);}}
   setTimeout(function(){var sp=document.getElementById('splash');if(sp)sp.classList.add('hidden');},1700);
